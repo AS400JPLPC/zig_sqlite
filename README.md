@@ -127,16 +127,16 @@ pub fn build(b: *std.Build) !void {
 ```
 ##Conditionnment
 
-pub const Blob = struct { data: []const u8 };
-pub const Text = struct { data: []const u8 };
-pub const Numeric = struct { data: []const u8 };
-pub const Date = struct { data: []const u8 };
-pub const Bool = struct { data: bool
+pub const Blob = struct { data: []const u8 };<BR/>
+pub const Text = struct { data: []const u8 };<BR/>
+pub const Numeric = struct { data: []const u8 };<BR/>
+pub const Date = struct { data: []const u8 };<BR/>
+pub const Bool = struct { data: bool};<BR/>
 
-ex: src-zig/sqlite.zig
+ex: src-zig/sqlite.zig<BR/>
 
 
-libsql/sqlite/sqlite.zig
+libsql/sqlite/sqlite.zig<BR/>
 ```
 switch (binding.type) {
                         .int32 => try stmt.bindInt32(idx, @intCast(value)),
@@ -150,10 +150,10 @@ switch (binding.type) {
                     }
 ```
 
-text = null  -> ""
-date = null  -> ""
-numeric = null -> ""
-example delivery date null = delivery not processed
+text = null  -> ""<BR/>
+date = null  -> ""<BR/>
+numeric = null -> ""<BR/>
+example delivery date null = delivery not processed<BR/>
 
 ## Avancement
 
