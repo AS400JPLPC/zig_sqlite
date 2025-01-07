@@ -38,7 +38,9 @@ Simple, low-level, explicitly-typed SQLite bindings for Zig.
 - [Build options](#build-options)
 - [License](#license)
 
+- [Avancement](#avancement
 
+- [Conditionnement](#conditionnement
 
 Then add `sqlite` as an import to your root modules in `build.zig`:
 
@@ -57,7 +59,7 @@ fn build(b: *std.Build) void {
 Open databases using `Database.open` and close them with `db.close()`:
 
 ```zig
-const sqlite = @import("sqlite");
+const sql3 = @import("sqlite");
 
 {
     // in-memory database
@@ -68,7 +70,7 @@ const sqlite = @import("sqlite");
 
 {
     // persistent database
-    const db = try sqlite.Database.open(.{ .path = "path/to/db.sqlite" });
+    const db = try sql3.Database.open(.{ .path = "path/to/db.sqlite" });
     defer db.close();
 }
 ```
@@ -121,3 +123,41 @@ pub fn build(b: *std.Build) !void {
     const sqlite = b.dependency("sqlite", .{ .SQLITE_ENABLE_RTREE = true,.SQLITE_OMIT_DEPRECATED = true  });
 }
 ```
+##Conditionnment
+
+pub const Blob = struct { data: []const u8 };
+pub const Text = struct { data: []const u8 };
+pub const Numeric = struct { data: []const u8 };
+pub const Date = struct { data: []const u8 };
+pub const Bool = struct { data: bool
+
+ex: src-zig/sqlite.zig
+
+
+libsql/sqlite/sqlite.zig
+```
+switch (binding.type) {
+                        .int32 => try stmt.bindInt32(idx, @intCast(value)),
+                        .int64 => try stmt.bindInt64(idx, @intCast(value)),
+                        .float64 => try stmt.bindFloat64(idx, @floatCast(value)),
+                        .blob => try stmt.bindBlob(idx, value),
+                        .text => try stmt.bindText(idx, value),
+                        .numeric => try stmt.bindNumeric(idx, value),
+                        .date => try stmt.bindDate(idx, value),
+                        .boolean => try stmt.bindBoolean(idx, value),
+                    }
+```
+
+text = null  -> ""
+date = null  -> ""
+numeric = null -> ""
+example delivery date null = delivery not processed
+
+## Avancement
+
+<BR/>
+→ 2025-01-07 01:00 update Implementation of extended procedures of the zig "libsql" lib while respecting the structure of SQLITE3 <BR/>
+The Date function is under study.<BR/>.
+<BR/>
+
+

@@ -1,10 +1,119 @@
 const std = @import("std");
-pub const c = @import("cuni");
-const errors = @import("errors");
+const c = @cImport(@cInclude("sqlite3.h"));
 
-pub const Error = errors.Error;
+
+pub const Error = error{
+    // Generic error
+    SQLITE_ERROR,
+    // Internal logic error in SQLite
+    SQLITE_INTERNAL,
+    // Access permission denied
+    SQLITE_PERM,
+    // Callback routine requested an abort
+    SQLITE_ABORT,
+    // The database file is locked
+    SQLITE_BUSY,
+    // A table in the database is locked
+    SQLITE_LOCKED,
+    // A malloc() failed
+    SQLITE_NOMEM,
+    // Attempt to write a readonly database
+    SQLITE_READONLY,
+    // Operation terminated by sqlite3_interrupt()
+    SQLITE_INTERRUPT,
+    // Some kind of disk I/O error occurred
+    SQLITE_IOERR,
+    // The database disk image is malformed
+    SQLITE_CORRUPT,
+    // Unknown opcode in sqlite3_file_control()
+    SQLITE_NOTFOUND,
+    // Insertion failed because database is full
+    SQLITE_FULL,
+    // Unable to open the database file
+    SQLITE_CANTOPEN,
+    // Database lock protocol error
+    SQLITE_PROTOCOL,
+    // Internal use only
+    SQLITE_EMPTY,
+    // The database schema changed
+    SQLITE_SCHEMA,
+    // String or BLOB exceeds size limit
+    SQLITE_TOOBIG,
+    // Abort due to constraint violation
+    SQLITE_CONSTRAINT,
+    // Data type mismatch
+    SQLITE_MISMATCH,
+    // Library used incorrectly
+    SQLITE_MISUSE,
+    // Uses OS features not supported on host
+    SQLITE_NOLFS,
+    // Authorization denied
+    SQLITE_AUTH,
+    // Not used
+    SQLITE_FORMAT,
+    // 2nd parameter to sqlite3_bind out of range
+    SQLITE_RANGE,
+    // File opened that is not a database file
+    SQLITE_NOTADB,
+    // Notifications from sqlite3_log()
+    SQLITE_NOTICE,
+    // Warnings from sqlite3_log()
+    SQLITE_WARNING,
+    // sqlite3_step() has another row ready
+    SQLITE_ROW,
+    // sqlite3_step() has finished executing
+    SQLITE_DONE,
+};
+pub fn getError(code: c_int) Error {
+    return switch (code & 0xFF) {
+        c.SQLITE_ERROR => Error.SQLITE_ERROR,
+        c.SQLITE_INTERNAL => Error.SQLITE_INTERNAL,
+        c.SQLITE_PERM => Error.SQLITE_PERM,
+        c.SQLITE_ABORT => Error.SQLITE_ABORT,
+        c.SQLITE_BUSY => Error.SQLITE_BUSY,
+        c.SQLITE_LOCKED => Error.SQLITE_LOCKED,
+        c.SQLITE_NOMEM => Error.SQLITE_NOMEM,
+        c.SQLITE_READONLY => Error.SQLITE_READONLY,
+        c.SQLITE_INTERRUPT => Error.SQLITE_INTERRUPT,
+        c.SQLITE_IOERR => Error.SQLITE_IOERR,
+        c.SQLITE_CORRUPT => Error.SQLITE_CORRUPT,
+        c.SQLITE_NOTFOUND => Error.SQLITE_NOTFOUND,
+        c.SQLITE_FULL => Error.SQLITE_FULL,
+        c.SQLITE_CANTOPEN => Error.SQLITE_CANTOPEN,
+        c.SQLITE_PROTOCOL => Error.SQLITE_PROTOCOL,
+        c.SQLITE_EMPTY => Error.SQLITE_EMPTY,
+        c.SQLITE_SCHEMA => Error.SQLITE_SCHEMA,
+        c.SQLITE_TOOBIG => Error.SQLITE_TOOBIG,
+        c.SQLITE_CONSTRAINT => Error.SQLITE_CONSTRAINT,
+        c.SQLITE_MISMATCH => Error.SQLITE_MISMATCH,
+        c.SQLITE_MISUSE => Error.SQLITE_MISUSE,
+        c.SQLITE_NOLFS => Error.SQLITE_NOLFS,
+        c.SQLITE_AUTH => Error.SQLITE_AUTH,
+        c.SQLITE_FORMAT => Error.SQLITE_FORMAT,
+        c.SQLITE_RANGE => Error.SQLITE_RANGE,
+        c.SQLITE_NOTADB => Error.SQLITE_NOTADB,
+        c.SQLITE_NOTICE => Error.SQLITE_NOTICE,
+        c.SQLITE_WARNING => Error.SQLITE_WARNING,
+        c.SQLITE_ROW => Error.SQLITE_ROW,
+        c.SQLITE_DONE => Error.SQLITE_DONE,
+        else => @panic("invalid error code"),
+    };
+}
+
+pub fn throw(code: c_int) Error!void {
+    return switch (code & 0xFF) {
+        c.SQLITE_OK => {},
+        else => getError(code),
+    };
+}
+
+//=========================================================
+//=========================================================
 pub const Blob = struct { data: []const u8 };
 pub const Text = struct { data: []const u8 };
+pub const Numeric = struct { data: []const u8 };
+pub const Date = struct { data: []const u8 };
+pub const Bool = struct { data: bool };
 
 pub fn blob(data: []const u8) Blob {
     return .{ .data = data };
@@ -14,10 +123,22 @@ pub fn text(data: []const u8) Text {
     return .{ .data = data };
 }
 
-pub fn cbool(data : i32 ) bool {
-
-    if(data == 1) return true else return false;
+pub fn numeric(data: []const u8) Numeric {
+    return .{ .data = data };
 }
+pub fn date(data: []const u8) Date {
+    return .{ .data = data };
+}
+pub fn boolean(data: bool) Bool {
+    return .{ .data = data };
+}
+
+
+pub fn cbool(data : bool ) i32 {
+     if(data) return 1 else return 0;
+}
+
+
 pub fn isDir( vdir : []const u8) bool {
     _= std.fs.cwd().openDir(vdir,.{}) catch {return false;};
      return true;
@@ -92,7 +213,7 @@ pub const Database = struct {
             },
         }
 
-        try errors.throw(c.sqlite3_open_v2(options.path, &ptr, flags, null));
+        try throw(c.sqlite3_open_v2(options.path, &ptr, flags, null));
 
         return .{ .ptr = ptr };
     }
@@ -103,18 +224,19 @@ pub const Database = struct {
         const ptr: [*]u8 = @constCast(data.ptr);
         const len: c_longlong = @intCast(data.len);
         const flags = c.SQLITE_DESERIALIZE_READONLY;
-        try errors.throw(c.sqlite3_deserialize(db.ptr, "main", ptr, len, len, flags));
+        try throw(c.sqlite3_deserialize(db.ptr, "main", ptr, len, len, flags));
         return db;
     }
 
     pub fn close(db: Database) void {
-        errors.throw(c.sqlite3_close_v2(db.ptr)) catch |err| {
+            throw(c.sqlite3_close_v2(db.ptr)) catch |err| {
             const msg = c.sqlite3_errmsg(db.ptr);
             std.debug.panic("sqlite3_close_v2: {s} {s}", .{ @errorName(err), msg });
         };
     }
 
-    pub fn prepare(db: Database, comptime Params: type, comptime Result: type, sql: []const u8) !Statement(Params, Result) {
+    pub fn prepare(db: Database, comptime Params: type, comptime Result: type, sql: []const u8)
+                    !Statement(Params, Result) {
         return try Statement(Params, Result).prepare(db, sql);
     }
 
@@ -137,6 +259,7 @@ pub const Database = struct {
         defer select.finalize();
 
         try select.bind(.{});
+
         defer select.reset();
 
         while (try select.step()) | testx| {
@@ -172,8 +295,8 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
         pub fn prepare(db: Database, sql: []const u8) !Self {
             var stmt = Self{};
 
-            try errors.throw(c.sqlite3_prepare_v2(db.ptr, sql.ptr, @intCast(sql.len), &stmt.ptr, null));
-            errdefer errors.throw(c.sqlite3_finalize(stmt.ptr)) catch |err| {
+                try throw(c.sqlite3_prepare_v2(db.ptr, sql.ptr, @intCast(sql.len), &stmt.ptr, null));
+            errdefer throw(c.sqlite3_finalize(stmt.ptr)) catch |err| {
                 const msg = c.sqlite3_errmsg(db.ptr);
                 std.debug.panic("sqlite3_finalize: {s} {s}", .{ @errorName(err), msg });
             };
@@ -249,7 +372,7 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
 
         
         pub fn finalize(stmt: Self) void {
-            errors.throw(c.sqlite3_finalize(stmt.ptr)) catch |err| {
+                throw(c.sqlite3_finalize(stmt.ptr)) catch |err| {
                 const db = c.sqlite3_db_handle(stmt.ptr);
                 const msg = c.sqlite3_errmsg(db);
                 std.debug.panic("sqlite3_finalize: {s} {s}", .{ @errorName(err), msg });
@@ -257,12 +380,12 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
         }
 
         pub fn reset(stmt: Self) void {
-            errors.throw(c.sqlite3_reset(stmt.ptr)) catch |err| {
+                throw(c.sqlite3_reset(stmt.ptr)) catch |err| {
                 const msg = c.sqlite3_errmsg(c.sqlite3_db_handle(stmt.ptr));
                 std.debug.panic("sqlite3_reset: {s} {s}", .{ @errorName(err), msg });
             };
 
-            errors.throw(c.sqlite3_clear_bindings(stmt.ptr)) catch |err| {
+                throw(c.sqlite3_clear_bindings(stmt.ptr)) catch |err| {
                 const msg = c.sqlite3_errmsg(c.sqlite3_db_handle(stmt.ptr));
                 std.debug.panic("sqlite3_clear_bindings: {s} {s}", .{ @errorName(err), msg });
             };
@@ -287,9 +410,9 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
                     // sqlite3_reset returns the same code we already have
                     const rc = c.sqlite3_reset(stmt.ptr);
                     if (rc == code) {
-                        return errors.getError(code);
+                        return getError(code);
                     } else {
-                        const err = errors.getError(rc);
+                        const err = getError(rc);
                         const msg = c.sqlite3_errmsg(c.sqlite3_db_handle(stmt.ptr));
                         std.debug.panic("sqlite3_reset: {s} {s}", .{ @errorName(err), msg });
                     }
@@ -308,6 +431,9 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
                             .float64 => try stmt.bindFloat64(idx, @floatCast(value)),
                             .blob => try stmt.bindBlob(idx, value),
                             .text => try stmt.bindText(idx, value),
+                            .numeric => try stmt.bindNumeric(idx, value),
+                            .date => try stmt.bindDate(idx, value),
+                            .boolean => try stmt.bindBoolean(idx, value),
                         }
                     } else {
                         try stmt.bindNull(idx);
@@ -320,49 +446,79 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
                         .float64 => try stmt.bindFloat64(idx, @floatCast(value)),
                         .blob => try stmt.bindBlob(idx, value),
                         .text => try stmt.bindText(idx, value),
+                        .numeric => try stmt.bindNumeric(idx, value),
+                        .date => try stmt.bindDate(idx, value),
+                        .boolean => try stmt.bindBoolean(idx, value),
                     }
                 }
             }
         }
 
         fn bindNull(stmt: Self, idx: c_int) !void {
-            try errors.throw(c.sqlite3_bind_null(stmt.ptr, idx));
+            try throw(c.sqlite3_bind_null(stmt.ptr, idx));
         }
 
         fn bindInt32(stmt: Self, idx: c_int, value: i32) !void {
-            try errors.throw(c.sqlite3_bind_int(stmt.ptr, idx, value));
+            try throw(c.sqlite3_bind_int(stmt.ptr, idx, value));
         }
 
+        fn bindBoolean(stmt: Self, idx: c_int, value: Bool) !void {
+            var val:i32 = 0;
+            if (value.data == true) val =1;
+             try throw(c.sqlite3_bind_int(stmt.ptr, idx, val));
+        }
         fn bindInt64(stmt: Self, idx: c_int, value: i64) !void {
-            try errors.throw(c.sqlite3_bind_int64(stmt.ptr, idx, value));
+            try throw(c.sqlite3_bind_int64(stmt.ptr, idx, value));
         }
 
         fn bindFloat64(stmt: Self, idx: c_int, value: f64) !void {
-            try errors.throw(c.sqlite3_bind_double(stmt.ptr, idx, value));
+            try throw(c.sqlite3_bind_double(stmt.ptr, idx, value));
         }
 
         fn bindBlob(stmt: Self, idx: c_int, value: Blob) !void {
             const ptr = value.data.ptr;
             const len = value.data.len;
-            try errors.throw(c.sqlite3_bind_blob64(stmt.ptr, idx, ptr, @intCast(len), c.SQLITE_STATIC));
+            try throw(c.sqlite3_bind_blob64(stmt.ptr, idx, ptr, @intCast(len), c.SQLITE_STATIC));
         }
 
         fn bindText(stmt: Self, idx: c_int, value: Text) !void {
             const ptr = value.data.ptr;
             const len = value.data.len;
-            try errors.throw(c.sqlite3_bind_text64(stmt.ptr, idx, ptr, @intCast(len), c.SQLITE_STATIC, c.SQLITE_UTF8));
+            try throw(c.sqlite3_bind_text64(stmt.ptr, idx, ptr, @intCast(len), c.SQLITE_STATIC, c.SQLITE_UTF8));
+        }
+        
+        fn bindNumeric(stmt: Self, idx: c_int, value: Numeric) !void {
+ 
+            const ptr = value.data.ptr;
+            const len = value.data.len;
+            try throw(c.sqlite3_bind_text64(stmt.ptr, idx, ptr, @intCast(len), c.SQLITE_STATIC, c.SQLITE_UTF8));
         }
 
+        
+        fn bindDate(stmt: Self, idx: c_int, value: Date) !void {
+            const ptr = value.data.ptr;
+            const len = value.data.len;
+            try throw(c.sqlite3_bind_text64(stmt.ptr, idx, ptr, @intCast(len), c.SQLITE_STATIC, c.SQLITE_UTF8));
+        }
+       
         fn row(stmt: Self) !Result {
             var result: Result = undefined;
 
             inline for (column_bindings, 0..) |binding, i| {
                 const n = stmt.column_index_map[i];
-
                 switch (c.sqlite3_column_type(stmt.ptr, n)) {
-                    c.SQLITE_NULL => if (binding.nullable) {
-                        @field(result, binding.name) = null;
-                    } else {
+                    c.SQLITE_NULL => if (binding.nullable or binding.type == .date
+                                    or binding.type == .text or binding.type == .numeric) {
+                        if ( binding.type == .date or binding.type == .text or binding.type == .numeric){
+                            switch (binding.type) {
+                                .date => @field(result, binding.name) = stmt.columnDate(n),
+                                .text => @field(result, binding.name) = stmt.columnText(n),
+                                .numeric =>@field(result, binding.name) = stmt.columnNumeric(n),
+                                else =>.{},
+                            }
+                        } else @field(result, binding.name) = null;
+                        
+                     } else {
                         return error.InvalidColumnType;
                     },
 
@@ -393,12 +549,15 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
 
                             @field(result, binding.name) = @intCast(value);
                         },
+                         .boolean =>@field(result, binding.name) = stmt.columnBoolean(n),
+                         .numeric =>@field(result, binding.name) = stmt.columnNumeric(n),
                         else => return error.InvalidColumnType,
                     },
 
                     c.SQLITE_FLOAT => switch (binding.type) {
-                        .float64 => @field(result, binding.name) = @floatCast(stmt.columnFloat64(n)),
-                        else => return error.InvalidColumnType,
+                        .numeric =>@field(result, binding.name) = stmt.columnNumeric(n),
+                        .float64 =>@field(result, binding.name) = @floatCast(stmt.columnFloat64(n)),
+                         else => return error.InvalidColumnType,
                     },
 
                     c.SQLITE_BLOB => switch (binding.type) {
@@ -408,9 +567,11 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
 
                     c.SQLITE_TEXT => switch (binding.type) {
                         .text => @field(result, binding.name) = stmt.columnText(n),
+                        .numeric =>@field(result, binding.name) = stmt.columnNumeric(n),
+                        .date =>@field(result, binding.name) = stmt.columnDate(n),
                         else => return error.InvalidColumnType,
                     },
-
+                  
                     else => @panic("internal SQLite error"),
                 }
             }
@@ -441,6 +602,10 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
         }
 
         fn columnText(stmt: Self, n: c_int) Text {
+            if (c.SQLITE_NULL == c.sqlite3_column_type(stmt.ptr, n)) {
+                var val : Text = undefined;
+                val.data =""; return val;
+            }
             const ptr: [*]const u8 = @ptrCast(c.sqlite3_column_text(stmt.ptr, n));
             const len = c.sqlite3_column_bytes(stmt.ptr, n);
             if (len < 0) {
@@ -448,6 +613,41 @@ pub fn Statement(comptime Params: type, comptime Result: type) type {
             }
 
             return text(ptr[0..@intCast(len)]);
+        }
+        
+        fn columnNumeric(stmt: Self, n: c_int) Numeric {
+            if (c.SQLITE_NULL == c.sqlite3_column_type(stmt.ptr, n)) {
+                var val : Numeric = undefined;
+                val.data =""; return val;
+            }
+            const ptr: [*]const u8 = @ptrCast(c.sqlite3_column_text(stmt.ptr, n));
+            const len = c.sqlite3_column_bytes(stmt.ptr, n);
+            if (len < 0) {
+                @panic("sqlite3_column_bytes: len < 0");
+            }
+
+            return numeric(ptr[0..@intCast(len)]);
+        }
+
+        fn columnDate(stmt: Self, n: c_int) Date {
+            if (c.SQLITE_NULL == c.sqlite3_column_type(stmt.ptr, n)) {
+                var val : Date = undefined;
+                val.data =""; return val;
+            }
+            const ptr: [*]const u8 = @ptrCast(c.sqlite3_column_text(stmt.ptr, n));
+            const len = c.sqlite3_column_bytes(stmt.ptr, n);
+            if (len < 0) {
+                @panic("sqlite3_column_bytes: len < 0");
+            }
+
+            return date(ptr[0..@intCast(len)]);
+        }
+
+        
+        fn columnBoolean(stmt: Self, n: c_int) Bool {
+            var valBool : Bool = undefined;
+            if(c.sqlite3_column_int(stmt.ptr, n) == 1) valBool.data = true else valBool.data = false;
+            return valBool;   
         }
     };
 }
@@ -459,6 +659,9 @@ const Binding = struct {
         float64,
         blob,
         text,
+        numeric,
+        date,
+        boolean,
     };
 
     pub const Type = union(TypeTag) {
@@ -467,10 +670,18 @@ const Binding = struct {
         float64: std.builtin.Type.Float,
         blob: void,
         text: void,
+        numeric: void,
+        date:void,
+        boolean:void,
+        
         pub fn parse(comptime T: type) Type {
             return switch (T) {
                 Blob => .{ .blob = {} },
                 Text => .{ .text = {} },
+                Numeric => .{ .numeric = {} },
+                Date => .{ .date = {} },
+                Bool => .{ .boolean ={}},
+                
                 else => switch (@typeInfo(T)) {
                     .int => |info| switch (info.signedness) {
                         .signed => if (info.bits <= 32) .{ .int32 = info } else .{ .int64 = info },
@@ -483,28 +694,6 @@ const Binding = struct {
         }
     };
 
-    // pub const Kind = enum {
-    //     int32,
-    //     int64,
-    //     float64,
-    //     blob,
-    //     text,
-
-    //     pub fn parse(comptime T: type) Kind {
-    //         return switch (T) {
-    //             Blob => .blob,
-    //             Text => .text,
-    //             else => switch (@typeInfo(T)) {
-    //                 .Int => |info| switch (info.signedness) {
-    //                     .signed => if (info.bits <= 32) .int32 else .int64,
-    //                     .unsigned => if (info.bits <= 31) .int32 else .int64,
-    //                 },
-    //                 .Float => .float64,
-    //                 else => @compileError("invalid binding type"),
-    //             },
-    //         };
-    //     }
-    // };
 
     name: []const u8,
     type: Type,

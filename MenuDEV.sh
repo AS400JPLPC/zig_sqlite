@@ -75,7 +75,8 @@ do
     f_dsplyPos  6  24 $faGras$fcJaune '------------compile Zig-----------------'
 
     f_dsplyPos  8  20 $faGras$fcRouge' 10'; f_dsplyPos  8  24 $faGras$fcGreen 'Testsql'
-
+    f_dsplyPos 10  20 $faGras$fcRouge' 18'; f_dsplyPos 10  24 $faGras$fcGreen 'Zsqlite'
+    
     f_dsplyPos 16  24 $faGras$fcJaune '----------------------------------------'
 
     f_dsplyPos 17  20 $faGras$fcRouge'33.'; f_dsplyPos 17  24 $faGras$fcGreen 'Debug codelldb'
@@ -116,6 +117,10 @@ do
             /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Testsql"
         ;;
 
+#Zsqlite"
+        18)
+            /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zsqlite"
+        ;;
 
 
 #debug

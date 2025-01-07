@@ -60,25 +60,12 @@ pub fn build(b: *std.Build) void {
 
     if (b.option(bool, "SQLITE_OMIT_DEPRECATED", "SQLITE_OMIT_DEPRECATED") orelse false)
         flags.append("-DSQLITE_OMIT_DEPRECATED") catch @panic("OOM");
-    const cuni_mod = b.addModule("cuni", .{
-        .root_source_file = b.path( "./sqlite/c.zig" ),
-    });
 
 
-    const errors_mod = b.addModule("errors", .{
-        .root_source_file = b.path( "./sqlite/errors.zig" ),
-        .imports= &.{
-            .{ .name = "cuni",  .module = cuni_mod},
-        },
-    });
 
 
     const sqlite_mod = b.addModule("sqlite", .{
         .root_source_file = b.path( "./sqlite/sqlite.zig" ),
-        .imports= &.{
-            .{ .name = "errors", .module = errors_mod },
-            .{ .name = "cuni",  .module = cuni_mod},
-        },
     });
 
 

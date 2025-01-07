@@ -1,9 +1,5 @@
 const std = @import("std");
-
-const c = @import("cuni");
-
 const sql3 = @import("sqlite");
-
 
 
 
@@ -66,7 +62,8 @@ pub fn main () ! void {
         defer select1.reset();
 
         if (try select1.step()) |user| {
-            std.log.info(" if select .min = 0   {s} age: {d}  tst OK:{}", .{ user.id.data, user.age orelse 0,sql3.cbool(user.isok )} );
+            std.log.info(" if select .min = 0   {s} age: {d}  tst OK:{}",
+                .{ user.id.data, user.age orelse 0,user.isok});
         }
     }
 
@@ -85,7 +82,7 @@ pub fn main () ! void {
         defer select2.reset();
 
         while (try select2.step()) |user| {
-            std.log.info("while select FULL   {s} age: {d}  tst OK:{}", .{ user.id.data, user.age orelse 0,sql3.cbool(user.isok )} );
+            std.log.info("while select FULL   {s} age: {d}  tst OK:{}", .{user.id.data, user.age orelse 0,user.isok} );
         }
     }
 
@@ -102,7 +99,8 @@ pub fn main () ! void {
         defer select3.reset();
 
         while (try select3.step()) |user| {
-            std.log.info("while select .val = 21   {s} age: {d}  tst OK:{}", .{ user.id.data, user.age orelse 0,sql3.cbool(user.isok )} );
+            std.log.info("while select .val = 21   {s} age: {d}  tst OK:{}",
+                .{ user.id.data, user.age orelse 0,user.isok} );
         }
     }
 
@@ -119,7 +117,8 @@ pub fn main () ! void {
         defer select4.reset();
 
         while (try select4.step()) |user| {
-            std.log.info("while select NULL   {s} age: {any}  tst OK:{}", .{ user.id.data, user.age ,sql3.cbool(user.isok )} );
+            std.log.info("while select NULL   {s} age: {any}  tst OK:{}",
+                .{ user.id.data, user.age ,user.isok} );
         }
     }
 
@@ -157,7 +156,7 @@ pub fn main () ! void {
 
         while (try select5.step()) |user| {
             std.log.info("while select .val = 21   {s} age: {d}  tst OK:{}",
-                 .{ user.id.data, user.age orelse 0,sql3.cbool(user.isok )} );
+                 .{ user.id.data, user.age orelse 0,user.isok} );
         }
     }
 
