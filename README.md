@@ -21,6 +21,8 @@ pub fn cbool(data : i32 ) bool ...
 
 ```
 
+
+
 **TEST. Testsql.zig** :
 
 a complete test cycle is made available to you

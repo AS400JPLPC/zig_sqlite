@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @cImport(@cInclude("sqlite3.h"));
 
 
+
 pub const Error = error{
     // Generic error
     SQLITE_ERROR,
@@ -137,7 +138,8 @@ pub fn boolean(data: bool) Bool {
 pub fn cbool(data : bool ) i32 {
      if(data) return 1 else return 0;
 }
-
+//=========================================================
+//=========================================================
 
 pub fn isDir( vdir : []const u8) bool {
     _= std.fs.cwd().openDir(vdir,.{}) catch {return false;};
@@ -184,7 +186,8 @@ pub fn openTmp(tDir: std.fs.Dir, name: []const u8) !Database {
 
     return try Database.open(.{ .path = path_file });
 }
-
+//=========================================================
+//=========================================================
 
 pub const Database = struct {
     pub const Mode = enum { ReadWrite, ReadOnly };

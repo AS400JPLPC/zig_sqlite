@@ -1,11 +1,9 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
-    // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const target   = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-
 
     // ===========================================================
     // 
