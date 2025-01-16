@@ -7,10 +7,12 @@
 const std = @import("std");
 const zfld = @import("zfield");
 const dcml = @import("decimal");
+const Dte  = @import("datetime");
+const Tmz = @import("timezones");
 
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
-
+const allocSQL = std.heap.page_allocator;
 pub const contact = struct {
   name      : zfld.ZFIELD  ,
   prenom    : zfld.ZFIELD  ,
@@ -23,7 +25,8 @@ pub const contact = struct {
   htx       : dcml.DCMLFX  ,
   ttc       : dcml.DCMLFX  ,
   nbritem   : dcml.DCMLFX  ,
-  
+  dfacture  : Dte.DATE  ,
+ 
 
   // defined structure and set ""
     pub fn initRecord() contact {
@@ -41,6 +44,7 @@ pub const contact = struct {
             .htx    = dcml.DCMLFX.init(25,2) ,
             .ttc    = dcml.DCMLFX.init(25,2)  ,
             .nbritem  = dcml.DCMLFX.init(15,0) ,
+            .dfacture = Dte.DATE.nowDate(Tmz.Europe.Paris),
         };
         
         return rcd;      
@@ -58,6 +62,7 @@ pub const contact = struct {
         r.htx.deinit();
         r.ttc.deinit();
         r.nbritem.deinit();
+        Dte.DATE.dateOff(&r.dfacture);
     }
 
 
@@ -97,9 +102,28 @@ var friend  = contact.initRecord();
     xx = friend.ttc.string();
     pause(xx);
 
+    xx = friend.dfacture.stringFR(allocSQL);
+    pause(xx);
+
+    xx = friend.dfacture.dateExt(allocSQL,Dte.DATE.Idiom.fr);
+    pause(xx);
+
+    friend.deinitRecord();
+    xx = friend.dfacture.stringIso(allocSQL);
+    pause(xx);
     
+
+    xx = friend.dfacture.dateExt(allocSQL,Dte.DATE.Idiom.fr);
+    pause(xx);
+
+    if (!friend.dfacture.status) std.debug.print("date de facture {}\n",.{null});
     zfld.deinitZfld();
     dcml.deinitDcml();
+
+    friend  = contact.initRecord();
+    xx = friend.dfacture.stringFR(allocSQL);
+    pause(xx);
+    
     pause("stop");
 }
 

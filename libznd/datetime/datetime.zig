@@ -90,7 +90,7 @@ fn ymd2ord(year: u16, month: u8, day: u8) u32 {
 //------------------------------------
 // Datetime
 // -----------------------------------
-pub const DTime = struct {
+pub const DTIME = struct {
     year: u16,
     month: u4,
     day: u8,
@@ -101,9 +101,9 @@ pub const DTime = struct {
     tmz : u16 = 0,
 
     //Change of field attribute
-    pub fn hardTime(buf :[]const u8) DTime{
+    pub fn hardTime(buf :[]const u8) DTIME{
 
-        var tm = DTime {
+        var tm = DTIME {
             .year  = 0,
             .month = 0,
             .day   = 0,
@@ -161,7 +161,7 @@ pub const DTime = struct {
 
     // Date initialization in UTC ONLY time-stamp format.
     // use is made of a chronolog
-    pub fn nowUTC() !DTime {
+    pub fn nowUTC() DTIME {
         const TS: u128 = @abs(time.nanoTimestamp());
         var th: u64 = @intCast(@mod(TS, time.ns_per_day));
           
@@ -192,8 +192,8 @@ pub const DTime = struct {
 
         
         const chronoHardFMT :[]const u8 = "{:0>4}{:0>2}{:0>2}{:0>2}{:0>2}{:0>2}{:0>9}{:0>3}";
-        const  r : []const u8 = try  std.fmt.allocPrint(allocDateTime, chronoHardFMT,
-            .{ year, month, day , hr, min,sec,ns, 0 }) ;
+        const  r : []const u8 =  std.fmt.allocPrint(allocDateTime, chronoHardFMT,
+            .{ year, month, day , hr, min,sec,ns, 0 })  catch unreachable;
 
         const tm = hardTime(r) ;
         defer allocDateTime.free(r);
@@ -201,7 +201,7 @@ pub const DTime = struct {
     }
 
     //  Date time reverse  timestamp
-    pub fn Timestamp(self: DTime) u64 {
+    pub fn Timestamp(self: DTIME) u64 {
 
         // Only for a simplified calculation and without leap years here
         const days_per_month = [_]u8 { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -233,7 +233,7 @@ pub const DTime = struct {
 
 
     // Timestamp date into time-zone
-    pub fn nowTime(mz :tmz.Timezone) !DTime {
+    pub fn nowTime(mz :tmz.Timezone) DTIME {
         //timezoneem  Europe.Paris = 60 minutes in nanoseconds
         const TS : u128 = @intCast(time.nanoTimestamp() + (mz.offset * @as(i64,time.ns_per_min))) ;
 
@@ -266,8 +266,8 @@ pub const DTime = struct {
 
         
         const chronoHardFMT :[]const u8 = "{:0>4}{:0>2}{:0>2}{:0>2}{:0>2}{:0>2}{:0>9}{:0>3}";
-        const  r : []const u8 = try  std.fmt.allocPrint(allocDateTime, chronoHardFMT,
-            .{ year, month, day , hr, min,sec,ns, mz.offset }) ;
+        const  r : []const u8 = std.fmt.allocPrint(allocDateTime, chronoHardFMT,
+            .{ year, month, day , hr, min,sec,ns, mz.offset }) catch unreachable;
 
         
         const tm = hardTime(r) ;
@@ -280,17 +280,19 @@ pub const DTime = struct {
 
     const  chronoTimeFMT :[]const u8 = "{:0>4}-{:0>2}-{:0>2}T:{:0>2}:{:0>2}:{:0>2}N:{:0>9}Z:{:0>3}";
 
-    pub fn stringTime(self: DTime, allocat: AllocDate) ![]const u8 {
-        return try std.fmt.allocPrint(allocat, chronoTimeFMT,
-            .{ self.year, self.month, self.day, self.hour, self.minute,self.second,self.nanosecond,self.tmz });
+    pub fn stringTime(self: DTIME, allocat: AllocDate) []const u8 {
+        return std.fmt.allocPrint(allocat, chronoTimeFMT,
+            .{ self.year, self.month, self.day, self.hour, self.minute,self.second,self.nanosecond,self.tmz })
+            catch unreachable;
     }
 
     const chronoNumFMT = "{:0>4}{:0>2}{:0>2}{:0>2}{:0>2}{:0>2}{:0>9}{:0>3}";
 
-    pub fn numTime(self: DTime, allocat: AllocDate) !u128 {
-        const  r : []const u8 = try std.fmt.allocPrint(allocat, chronoNumFMT,
-            .{ self.year, self.month, self.day, self.hour, self.minute,self.second,self.nanosecond,self.tmz });
-        const i :u128 = try std.fmt.parseInt(u128,r,10);
+    pub fn numTime(self: DTIME, allocat: AllocDate) u128 {
+        const  r : []const u8 = std.fmt.allocPrint(allocat, chronoNumFMT,
+            .{ self.year, self.month, self.day, self.hour, self.minute,self.second,self.nanosecond,self.tmz })
+            catch unreachable;
+        const i :u128 =  std.fmt.parseInt(u128,r,10) catch unreachable;
         return i;
     }
 
@@ -306,11 +308,11 @@ pub const ISOCalendar = struct {
     weekday: u3, // Day of week 1-7
 };
 
-pub const Date = struct {
+pub const DATE = struct {
     year: u16,
     month: u4 = 1, // Month of year
     day: u8 = 1, // Day of month
-
+    status : bool = false, // date null
 
     // Number of days in each month not accounting for leap year
     pub const Weekday = enum(u3) {
@@ -340,25 +342,38 @@ pub const Date = struct {
 
 
     // Create and validate the date
-    pub fn create(year: u32, month: u32, day: u32) !Date {
+    pub fn create(year: u32, month: u32, day: u32) !DATE {
+        
         if (year < MIN_YEAR or year > MAX_YEAR) return error.InvalidDate;
         if (month < 1 or month > 12) return error.InvalidDate;
         if (day < 1 or day > daysInMonth(year, month)) return error.InvalidDate;
         // Since we just validated the ranges we can now savely cast
-        return Date{
+        return DATE{
             .year = @intCast(year),
             .month = @intCast(month),
             .day = @intCast(day),
+            .status = true,
         };
     }
+
+    // Do not set to zeros for consistency with function set.
+    // Date will be output as “string ISO/FR/US” 0000-00-00
+    pub fn dateOff(self: *DATE) void {
+        self.year = 0;
+        self.month =0;
+        self.day = 0;
+        self.status = false;
+    }
+    pub fn isValid(self:DATE) bool { return self.status;}
     
     // Return a copy of the date
-    pub fn copy(self: Date) !Date {
-        return Date.create(self.year, self.month, self.day);
+    pub fn copy(self: DATE) !DATE {
+        if (!self.status) return error.InvalidDate;
+        return DATE.create(self.year, self.month, self.day);
     }
 
     // Create a Date from the number of days since 01-Jan-0001
-    fn fromOrdinal(ordinal: u32) Date {
+    fn fromOrdinal(ordinal: u32) DATE {
         // n is a 1-based index, starting at 1-Jan-1.  The pattern of leap years
         // repeats exactly every 400 years.  The basic strategy is to find the
         // closest 400-year boundary at or before n, then work with the offset
@@ -410,7 +425,7 @@ pub const Date = struct {
 
         if (n1 == 4 or n100 == 4) {
             assert(n == 0);
-            return Date.create(year - 1, 12, 31) catch unreachable;
+            return DATE.create(year - 1, 12, 31) catch unreachable;
         }
 
         // Now the year is correct, and n is the offset from January 1.  We find
@@ -431,24 +446,25 @@ pub const Date = struct {
 
         // Now the year and month are correct, and n is the offset from the
         // start of that month:  we're done!
-        return Date.create(year, month, n + 1) catch unreachable;
+        return DATE.create(year, month, n + 1) catch unreachable;
     }
 
     // Return proleptic Gregorian ordinal for the year, month and day.
     // January 1 of year 1 is day 1.  Only the year, month and day values
     // contribute to the result.
-    fn toOrdinal(self: Date) u32 {
+    fn toOrdinal(self: DATE) u32 {
         return ymd2ord(self.year, self.month, self.day);
     }
 
 
     //Change of field attribute
-    fn hardDate(buf :[]const u8) Date{
+    fn hardDate(buf :[]const u8) DATE{
 
-        var dt = Date {
+        var dt = DATE {
             .year  = 0,
             .month = 0,
             .day   = 0,
+            .status = true,
         };
         for(buf[0..8], 0..8) |n,x| {
             var d : u8 = 0;
@@ -475,9 +491,8 @@ pub const Date = struct {
         }    
         return dt;
     }
-
     // Returns today's date into time-zone
-    pub fn nowDate(mz : tmz.Timezone) !Date {
+    pub fn nowDate(mz : tmz.Timezone) DATE {
 
         // Ajouter ex; from paris 60  minutes en nanosecond
         const TS : u128 = @intCast(time.nanoTimestamp() + (mz.offset * @as(i64,time.ns_per_min))); 
@@ -500,8 +515,8 @@ pub const Date = struct {
 
         
         const chronoHardFMT :[]const u8 = "{:0>4}{:0>2}{:0>2}";
-        const  r : []const u8 = try  std.fmt.allocPrint(allocDateTime, chronoHardFMT,
-            .{ year, month, day }) ;
+        const  r : []const u8 = std.fmt.allocPrint(allocDateTime, chronoHardFMT,
+            .{ year, month, day }) catch unreachable;
         defer allocDateTime.free(r);
         return hardDate(r);
  
@@ -510,7 +525,8 @@ pub const Date = struct {
 
     // Convert to an ISOCalendar date containing the year, week number, and
     // weekday. First week is 1. Monday is 1, Sunday is 7.
-    pub fn isoCalendar(self: Date) ISOCalendar {
+    pub fn isoCalendar(self: DATE) !ISOCalendar {
+        if (!self.status) return error.InvalidDate;
         // Ported from python's isocalendar.
         var y = self.year;
         var first_monday = daysBeforeFirstMonday(y);
@@ -534,11 +550,11 @@ pub const Date = struct {
     // ------------------------------------------------------------------------
     // Comparisons
     // ------------------------------------------------------------------------
-    pub fn eql(self: Date, other: Date) bool {
+    pub fn eql(self: DATE, other: DATE) bool {
         return self.cmp(other) == .eq;
     }
 
-    pub fn cmp(self: Date, other: Date) Order {
+    pub fn cmp(self: DATE, other: DATE) Order {
         if (self.year > other.year) return .gt;
         if (self.year < other.year) return .lt;
         if (self.month > other.month) return .gt;
@@ -548,20 +564,20 @@ pub const Date = struct {
         return .eq;
     }
 
-    pub fn gt(self: Date, other: Date) bool {
+    pub fn gt(self: DATE, other: DATE) bool {
         return self.cmp(other) == .gt;
     }
 
-    pub fn gte(self: Date, other: Date) bool {
+    pub fn gte(self: DATE, other: DATE) bool {
         const r = self.cmp(other);
         return r == .eq or r == .gt;
     }
 
-    pub fn lt(self: Date, other: Date) bool {
+    pub fn lt(self: DATE, other: DATE) bool {
         return self.cmp(other) == .lt;
     }
 
-    pub fn lte(self: Date, other: Date) bool {
+    pub fn lte(self: DATE, other: DATE) bool {
         const r = self.cmp(other);
         return r == .eq or r == .lt;
     }
@@ -570,29 +586,29 @@ pub const Date = struct {
     // Parsing
     // ------------------------------------------------------------------------
     // Parse date in format YYYY-MM-DD. Numbers must be zero padded.
-    pub fn parseIso(ymd: []const u8) !Date {
+    pub fn parseISO(ymd: []const u8) !DATE {
         const value = std.mem.trim(u8, ymd, " ");
         if (value.len != 10) return error.InvalidFormat;
         const year = std.fmt.parseInt(u16, value[0..4], 10) catch return error.InvalidFormat;
         const month = std.fmt.parseInt(u8, value[5..7], 10) catch return error.InvalidFormat;
         const day = std.fmt.parseInt(u8, value[8..10], 10) catch return error.InvalidFormat;
-        return Date.create(year, month, day);
+        return DATE.create(year, month, day);
     }
-    pub fn parseFR(dmy: []const u8) !Date {
+    pub fn parseFR(dmy: []const u8) !DATE {
         const value = std.mem.trim(u8, dmy, " ");
         if (value.len != 10) return error.InvalidFormat;
         const day = std.fmt.parseInt(u8, value[0..2], 10) catch return error.InvalidFormat;
         const month = std.fmt.parseInt(u8, value[3..5], 10) catch return error.InvalidFormat;
         const year = std.fmt.parseInt(u16, value[6..10], 10) catch return error.InvalidFormat;
-        return Date.create(year, month, day);
+        return DATE.create(year, month, day);
     }
-    pub fn parseUS(mdy: []const u8) !Date {
+    pub fn parseUS(mdy: []const u8) !DATE {
         const value = std.mem.trim(u8, mdy, " ");
         if (value.len != 10) return error.InvalidFormat;
         const month = std.fmt.parseInt(u8, value[0..2], 10) catch return error.InvalidFormat;
         const day = std.fmt.parseInt(u8, value[3..5], 10) catch return error.InvalidFormat;
         const year = std.fmt.parseInt(u16, value[6..10], 10) catch return error.InvalidFormat;
-        return Date.create(year, month, day);
+        return DATE.create(year, month, day);
     }
     // TODO: Parsing
 
@@ -602,20 +618,23 @@ pub const Date = struct {
 
     // Return date in ISO format YYYY-MM-DD
     const ISO_DATE_FMT = "{:0>4}-{:0>2}-{:0>2}";
-    pub fn stringIso(self: Date, allocator: AllocDate) ![]const u8 {
-        return std.fmt.allocPrint(allocator, ISO_DATE_FMT, .{ self.year, self.month, self.day });
+    pub fn stringISO(self: DATE, allocator: AllocDate) []const u8 {
+        return std.fmt.allocPrint(allocator, ISO_DATE_FMT,
+            .{ self.year, self.month, self.day }) catch unreachable;
     }
 
    // Return date in FR format DD/MM/YYYY
     const FR_DATE_FMT = "{:0>2}/{:0>2}/{:0>4}";
-    pub fn stringFR(self: Date, allocator: AllocDate) ![]const u8 {
-        return std.fmt.allocPrint(allocator, FR_DATE_FMT, .{ self.day, self.month, self.year }) ;
+    pub fn stringFR(self: DATE, allocator: AllocDate) []const u8 {
+        return std.fmt.allocPrint(allocator, FR_DATE_FMT,
+            .{ self.day, self.month, self.year }) catch unreachable;
     }
 
    // Return date in FR format MM/DD/YYYY
     const US_DATE_FMT = "{:0>2}/{:0>2}/{:0>4}";
-    pub fn stringUS(self: Date, allocator: AllocDate) ![]const u8 {
-        return std.fmt.allocPrint(allocator, US_DATE_FMT, .{ self.month, self.day, self.year });
+    pub fn stringUS(self: DATE, allocator: AllocDate) []const u8 {
+        return std.fmt.allocPrint(allocator, US_DATE_FMT,
+            .{ self.month, self.day, self.year }) catch unreachable;
     }
 
     // ------------------------------------------------------------------------
@@ -623,41 +642,45 @@ pub const Date = struct {
     // ------------------------------------------------------------------------
 
     // Return day of year starting with 1
-    pub fn dayOfYear(self: Date) u16 {
+    pub fn dayOfYear(self: DATE) u16 {
+        if (!self.status) {return 0;}
         const d = self.toOrdinal() - daysBeforeYear(self.year);
         assert(d >= 1 and d <= 366);
         return @intCast(d);
     }
 
      // Return day of week starting with Monday = 1 and Sunday = 7
-    fn dayOfWeek(self: Date) Weekday {
+    fn dayOfWeek(self: DATE) Weekday {
         const dow: u3 = @intCast(self.toOrdinal() % 7);
         return @enumFromInt(if (dow == 0) 7 else dow);
     }
     // Return day of week starting with Monday = 0 and Sunday = 6
-    fn weekday(self: Date) u4 {
+    fn weekday(self: DATE) u4 {
         return @intFromEnum(self.dayOfWeek()) - 1;
     }
 
     // Return whether the date is a weekend (Saturday or Sunday)
-    pub fn isWeekend(self: Date) bool {
+    pub fn isWeekend(self: DATE) bool {
+       if (!self.status) { return false;}
         return self.weekday() >= 5;
     }
 
     // Return day of week starting with Monday = 1 and Sunday = 7
-    pub fn dayNum(self: Date) u8 {
+    pub fn dayNum(self: DATE) u8 {
+        if (!self.status) {return 0;}
         const dow: u8 = @intCast(self.toOrdinal() % 7);
         return if (dow == 0) 7 else dow;
     }
 
-    pub fn getYear(self:Date) u16 {return self.year;}
+    pub fn getYear(self:DATE) u16 {return self.year;}
 
-    pub fn getMonth(self:Date) u4 {return self.month;}
+    pub fn getMonth(self:DATE) u4 {return self.month;}
 
-    pub fn getDay(self:Date) u8 {return self.day;}
+    pub fn getDay(self:DATE) u8 {return self.day;}
 
     // Return the ISO calendar based week of year. With 1 being the first week.
-    pub fn getWeek(self: Date) u32 {
+    pub fn getWeek(self: DATE) u32 {
+        if (!self.status) {return 0;}
         // Ported from python's isocalendar.
         var y = self.year;
         var first_monday = daysBeforeFirstMonday(y);
@@ -681,24 +704,57 @@ pub const Date = struct {
     // ------------------------------------------------------------------------
 
     // Return a copy of the date shifted by the given number of days
-    pub fn shiftDays(self: Date, days: i32) Date {
+    pub fn shiftDays(self: DATE, days: i32) DATE {
+        if (!self.status) {return self ;}
         return self.shift(Delta{ .days = days });
     }
 
+   // Return a copy of the date swistch by the given number of month
+   pub fn switchMonths(self: DATE, month: i32) DATE {
+       if (!self.status) {return self ;}
+        var days: i32 = 0;
+        var d : i32 = @intCast(self.day);
+        var n  : i32 = month ;
+        var mm : i32 = month;
+        if( month < 0) { n *= - 1; mm *= - 1; d *= -1; }
+        var dt = self;
+        while(n > 0) :( n -= 1) {
+        if( mm > 12 ) mm -= 12 * n ;
+            if ( month > 0 ) {
+                d += 1;
+                d *= -1;
+                dt =shiftDays(dt, d);
+                days = @intCast(daysInMonth(dt.year, @intCast(mm)));
+                dt =shiftDays(dt, days);
+                dt =shiftDays(dt, self.day);
+            }
+            else {
+                dt =shiftDays(dt, d);
+                days = @intCast(daysInMonth(dt.year, @intCast(mm)));
+                days -= 1;  days *= -1 ;
+                dt =shiftDays(dt, days);
+                dt =shiftDays(dt, self.day);
+            }
+        }
+        return  dt;
+    }
+
+    
     // Return a copy of the date shifted by the given number of years
-    pub fn shiftYears(self: Date, years: i16) Date {
+    pub fn shiftYears(self: DATE, years: i16) DATE {
+        if (!self.status) {return self ;}
         return self.shift(Delta{ .years = years });
     }
 
-    pub const Delta = struct {
+    const Delta = struct {
         years: i16 = 0,
         days: i32 = 0,
     };
 
     // Return a copy of the date shifted in time by the delta
-    pub fn shift(self: Date, delta: Delta) Date {
-        if (delta.years == 0 and delta.days == 0) {
-            return self.copy() catch unreachable;
+    fn shift(self: DATE, delta: Delta) DATE {
+        if ((delta.years == 0 and delta.days == 0) or self.status == false) {
+            if (!self.status) {return self ;}
         }
 
         // Shift year
@@ -733,7 +789,7 @@ pub const Date = struct {
         } else {
             ord += @intCast(delta.days);
         }
-        return Date.fromOrdinal(ord);
+        return DATE.fromOrdinal(ord);
     }
 
 
@@ -744,17 +800,29 @@ pub const Date = struct {
 
    // Return date extended
     const DATE_FMT_EXT= "{s} {:0>2} {s} {:0>4}";
-    pub fn dateExt(self: Date, allocator: AllocDate, lng: Idiom) ![]u8 {
+    pub fn dateExt(self: DATE, allocator: AllocDate, lng: Idiom) []u8 {
+        if(!self.status){
+            var dtx = self;
+            dtx.day = 1; dtx.month = 1;
+            return std.fmt.allocPrint(allocator, DATE_FMT_EXT,
+            .{ dtx.nameDay(lng), self.day, dtx.nameMonth(lng), self.year }) catch unreachable;
+        }
         return std.fmt.allocPrint(allocator, DATE_FMT_EXT,
-            .{ self.nameDay(lng), self.day, self.nameMonth(lng), self.year });
+            .{ self.nameDay(lng), self.day, self.nameMonth(lng), self.year }) catch unreachable;
     }
     const DATE_FMT_ABR= "{s}. {:0>2} {s}. {:0>4}";
-    pub fn dateAbr(self: Date, allocator: AllocDate, lng: Idiom) ![]u8 {
+    pub fn dateAbr(self: DATE, allocator: AllocDate, lng: Idiom) []u8 {
+        if(!self.status){
+            var dtx = self;
+            dtx.day = 1; dtx.month = 1;
+            return std.fmt.allocPrint(allocator, DATE_FMT_EXT,
+            .{ dtx.abbrevDay(lng), self.day, dtx.abbrevMonth(lng), self.year }) catch unreachable;
+        }
         return std.fmt.allocPrint(allocator, DATE_FMT_ABR,
-            .{ self.abbrevDay(lng), self.day, self.abbrevMonth(lng), self.year });
+            .{ self.abbrevDay(lng), self.day, self.abbrevMonth(lng), self.year }) catch unreachable;
     }
 
-     pub const Idiom = enum(u5) {
+    pub const Idiom = enum(u5) {
         en, // English
         fr, // French
         sp, // Spanish
@@ -773,12 +841,14 @@ pub const Date = struct {
         co, // Korean
         jp, // Japan
         ru, // Russia
+
     };
 
     
     // Return the abbreviation name of the day of the week, eg "Sunday"
-    pub fn abbrevDay(date:Date, lng : Idiom) [] const u8 {
-        var nday: u8 = @intCast(date.toOrdinal() % 7);
+    pub fn abbrevDay(self:DATE, lng : Idiom) [] const u8 {
+        if(!self.status) return "NULL";
+        var nday: u8 = @intCast(self.toOrdinal() % 7);
         if (nday == 0 ) nday = 7;
         switch(lng) {
             .en => {
@@ -850,7 +920,7 @@ pub const Date = struct {
                     5  => return "Fre",
                     6  => return "Sam",
                     7  => return "Son",
-                    else => return "",
+                    else => {},
                 }    
             },
             .ne =>{
@@ -998,12 +1068,13 @@ pub const Date = struct {
                 }    
             },
        }
-        return "";
+        return "NULL";
     }
 
     // Return the name of the day of the week, eg "Sunday"
-    pub fn nameDay(date:Date, lng : Idiom) []const u8 {
-        var nday: u8 = @intCast(date.toOrdinal() % 7);
+    pub fn nameDay(self:DATE, lng : Idiom) []const u8 {
+        if(!self.status) return "NULL";
+        var nday: u8 = @intCast(self.toOrdinal() % 7);
         if (nday == 0 ) nday = 7;
         switch( lng) {
             .en => {
@@ -1223,15 +1294,15 @@ pub const Date = struct {
                 }    
             },
         }
-        return "";
+        return "NULL";
     }     
 
 
    // Return the Abbreviation name of the day of the month, eg "January"
-    pub fn abbrevMonth(date:Date, lng : Idiom) [] const u8 {
+    pub fn abbrevMonth(self:DATE, lng : Idiom) [] const u8 {
         switch(lng) {
             .en => {
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Feb",
                     3  => return "Mar",
@@ -1248,7 +1319,7 @@ pub const Date = struct {
                 }   
              },
             .fr =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Fev",
                     3  => return "Mar",
@@ -1265,7 +1336,7 @@ pub const Date = struct {
                 }
             },    
             .sp =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Ene",
                     2  => return "Feb",
                     3  => return "Mar",
@@ -1282,7 +1353,7 @@ pub const Date = struct {
                 }
             },
             .po =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Fev",
                     3  => return "Mar",
@@ -1299,7 +1370,7 @@ pub const Date = struct {
                 }
             },
             .it =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Gen",
                     2  => return "Feb",
                     3  => return "Mar",
@@ -1316,7 +1387,7 @@ pub const Date = struct {
                 }
             },
             .de =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Feb",
                     3  => return "Mär",
@@ -1333,7 +1404,7 @@ pub const Date = struct {
                 }
             },
             .ne =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Feb",
                     3  => return "Maa",
@@ -1350,7 +1421,7 @@ pub const Date = struct {
                 }
             },
             .fi =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Tam",
                     2  => return "Hel",
                     3  => return "Maa",
@@ -1367,7 +1438,7 @@ pub const Date = struct {
                 }
             },
             .gr =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Ιαν",
                     2  => return "Φεβ",
                     3  => return "Μάρ",
@@ -1384,7 +1455,7 @@ pub const Date = struct {
                 }
             },
             .so =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Feb",
                     3  => return "Mar",
@@ -1401,7 +1472,7 @@ pub const Date = struct {
                 }
             },
             .lu =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Sau",
                     2  => return "Vas",
                     3  => return "Kov",
@@ -1418,7 +1489,7 @@ pub const Date = struct {
                 }
             },
             .es =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jan",
                     2  => return "Veb",
                     3  => return "Mär",
@@ -1435,7 +1506,7 @@ pub const Date = struct {
                 }
             },
             .pl =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Sty",
                     2  => return "Lut",
                     3  => return "Mar",
@@ -1452,7 +1523,7 @@ pub const Date = struct {
                 }
             },
             .ro =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Ian",
                     2  => return "Feb",
                     3  => return "Mar",
@@ -1469,7 +1540,7 @@ pub const Date = struct {
                 }
             },
             .cn =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "一月",
                     2  => return "二月",
                     3  => return "三月",
@@ -1486,7 +1557,7 @@ pub const Date = struct {
                 }
             },
             .co =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "1월",
                     2  => return "2월",
                     3  => return "3월",
@@ -1503,7 +1574,7 @@ pub const Date = struct {
                 }
             },
             .jp =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "1月",
                     2  => return "2月",
                     3  => return "3月",
@@ -1520,7 +1591,7 @@ pub const Date = struct {
                 }
             },
             .ru =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Янв",
                     2  => return "Фев",
                     3  => return "Мар",
@@ -1537,14 +1608,14 @@ pub const Date = struct {
                 }
             },
         }
-        return "";
+        return "NULL";
     }     
 
     // Return the name of the month, eg "January"
-    pub fn nameMonth(date:Date, lng : Idiom) []const u8 {
+    pub fn nameMonth(self:DATE, lng : Idiom) []const u8 {
         switch( lng) {
             .en => {
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "January",
                     2  => return "February",
                     3  => return "March",
@@ -1561,7 +1632,7 @@ pub const Date = struct {
                 }
              },
             .fr =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Janvier",
                     2  => return "Février",
                     3  => return "Mars",
@@ -1578,7 +1649,7 @@ pub const Date = struct {
                 }
             },
             .sp =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Enero",
                     2  => return "Febrero",
                     3  => return "Marzo",
@@ -1595,7 +1666,7 @@ pub const Date = struct {
                 }
             },
             .po =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Janeiro",
                     2  => return "Fevereiro",
                     3  => return "Março",
@@ -1612,7 +1683,7 @@ pub const Date = struct {
                 }
             },
             .it =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Gennaio",
                     2  => return "Febbraio",
                     3  => return "Marzo",
@@ -1629,7 +1700,7 @@ pub const Date = struct {
                 }
             },
             .de =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Januar",
                     2  => return "Februar",
                     3  => return "März",
@@ -1646,7 +1717,7 @@ pub const Date = struct {
                 }
             },
             .ne =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Januari",
                     2  => return "Februari",
                     3  => return "Maart",
@@ -1663,7 +1734,7 @@ pub const Date = struct {
                 }
             },
             .fi =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Tammikuu",
                     2  => return "Helmikuu",
                     3  => return "Maaliskuuta",
@@ -1680,7 +1751,7 @@ pub const Date = struct {
                 }
             },
             .gr =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Ιανουάριος",
                     2  => return "Φεβρουάριος",
                     3  => return "Μάρτιος",
@@ -1697,7 +1768,7 @@ pub const Date = struct {
                 }
             },
             .so =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Január",
                     2  => return "Február",
                     3  => return "Marec",
@@ -1714,7 +1785,7 @@ pub const Date = struct {
                 }
             },
             .lu =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Sausio",
                     2  => return "Vasario",
                     3  => return "Kovas",
@@ -1731,7 +1802,7 @@ pub const Date = struct {
                 }
             },
             .es =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Jaanuar",
                     2  => return "Veebruar",
                     3  => return "Märts",
@@ -1748,7 +1819,7 @@ pub const Date = struct {
                 }
             },
             .pl =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Styczeń",
                     2  => return "Luty",
                     3  => return "Marzec",
@@ -1765,7 +1836,7 @@ pub const Date = struct {
                 }
             },
             .ro =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Ianuarie",
                     2  => return "Februarie",
                     3  => return "Martie",
@@ -1782,7 +1853,7 @@ pub const Date = struct {
                 }
             },
             .cn =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "一月",
                     2  => return "二月",
                     3  => return "三月",
@@ -1799,7 +1870,7 @@ pub const Date = struct {
                 }
             },
             .co =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "1월",
                     2  => return "2월",
                     3  => return "3월",
@@ -1816,7 +1887,7 @@ pub const Date = struct {
                 }
             },
             .jp =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "1月",
                     2  => return "2月",
                     3  => return "3月",
@@ -1833,7 +1904,7 @@ pub const Date = struct {
                 }
             },
            .ru =>{
-                switch(date.month) {
+                switch(self.month) {
                     1  => return "Январь",
                     2  => return "Февраль",
                     3  => return "Март",
@@ -1850,7 +1921,7 @@ pub const Date = struct {
                 }
             },
         }
-        return "";
+        return "NULL";
     }
 };
 
