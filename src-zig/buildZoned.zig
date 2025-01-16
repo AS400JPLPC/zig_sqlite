@@ -10,25 +10,25 @@ pub fn build(b: *std.Build) void {
     // ===========================================================
     // 
     // Resolve the 'library' dependency.
+    // const zenlib_tui = b.dependency("libtui", .{});
     const zenlib_znd = b.dependency("libznd", .{});
-    const zenlib_sql = b.dependency("libsql", .{});
+    // const zenlib_sql = b.dependency("libsqlite", .{});
+
 
     // Building the executable
 
     const Prog = b.addExecutable(.{
-    .name = "Zsqlite",
-    .root_source_file = b.path( "./Zsqlite.zig" ),
+    .name = "Zoned",
+    .root_source_file = b.path( "./Zoned.zig" ),
     .target = target,
     .optimize = optimize,
     });
 
  
-    Prog.root_module.addImport("decimal", zenlib_znd.module("decimal"));
     Prog.root_module.addImport("zfield", zenlib_znd.module("zfield"));
-    Prog.root_module.addImport("sqlite", zenlib_sql.module("sqlite"));
-
-
-    b.installArtifact(Prog);
+    Prog.root_module.addImport("decimal", zenlib_znd.module("decimal"));
+    Prog.root_module.addImport("datetime", zenlib_znd.module("datetime"));
+    Prog.root_module.addImport("timezones", zenlib_znd.module("timezones"));    b.installArtifact(Prog);
 
 
 

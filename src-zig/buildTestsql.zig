@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) void {
 
     // Definition of dependencies
 
-    const zenlib_dep = b.dependency("library", .{});
+    const zenlib_znd = b.dependency("libznd", .{});
     const zenlib_sql = b.dependency("libsql", .{});
 
     // Building the executable
@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) void {
     });
 
  
-    Prog.root_module.addImport("decimal", zenlib_dep.module("decimal"));
+    Prog.root_module.addImport("decimal", zenlib_znd.module("decimal"));
     Prog.root_module.addImport("sqlite", zenlib_sql.module("sqlite"));
 
     b.installArtifact(Prog);

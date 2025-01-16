@@ -78,22 +78,6 @@ pub fn build(b: *std.Build) void {
     });
 
 
-    const decimal_mod = b.addModule("decimal", .{
-        .root_source_file = b.path( "./decimal/decimal.zig" ),
-    });
-
-
-    const zfield_mod = b.addModule("zfield", .{
-        .root_source_file = b.path( "./zfield/zfield.zig" ),
-    });
-
-
-
-     decimal_mod.addSystemIncludePath(.{ .cwd_relative ="/usr/include/mpdecimal.h"});
-    decimal_mod.link_libc = true;
-    decimal_mod.addObjectFile(.{.cwd_relative = "/usr/lib/libmpdec.so"});
-
-
     
     const library_mod = b.addModule("library", .{
         .root_source_file = b.path( "library.zig" ),
@@ -104,9 +88,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "forms",        .module = forms_mod },
         .{ .name = "grid",        .module = grid_mod },
         .{ .name = "menu",        .module = menu_mod },
-        .{ .name = "decimal",    .module = decimal_mod },
-        .{ .name = "zfield",    .module = zfield_mod },
-        
+         
         .{ .name = "callpgm",    .module = callpgm_mod },
         .{ .name = "zmmap",        .module = zmmap_mod },
         .{ .name = "crypto",    .module = crypto_mod },

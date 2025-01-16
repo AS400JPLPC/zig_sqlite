@@ -18,9 +18,6 @@ pub const crypto	= @import("crypto");
 
 
 
-pub const dcml		= @import("decimal");
-pub const zfld		= @import("zfield");
-
 
 pub const logger	= @import("logger");
 

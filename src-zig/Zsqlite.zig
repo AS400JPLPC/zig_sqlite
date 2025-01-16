@@ -2,7 +2,6 @@
 //---test Sqlite     ---
 //----------------------
 
-
 const std = @import("std");
 const zfld = @import("zfield");
 const dcml = @import("decimal");

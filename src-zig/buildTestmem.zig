@@ -1,3 +1,8 @@
+    ///-----------------------
+    /// build Test
+    /// zig 0.14.0 dev
+    ///-----------------------
+
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
@@ -8,30 +13,24 @@ pub fn build(b: *std.Build) void {
 
 
     // ===========================================================
-    // 
-    // Resolve the 'library' dependency.
-    const zenlib_znd = b.dependency("libznd", .{});
-    const zenlib_sql = b.dependency("libsql", .{});
+
+     const zfield   = b.dependency("libznd", .{}).module("zfield");
+
 
     // Building the executable
 
     const Prog = b.addExecutable(.{
-    .name = "Zsqlite",
-    .root_source_file = b.path( "./Zsqlite.zig" ),
+    .name = "Testmem",
+    .root_source_file = b.path( "./Testmem.zig" ),
     .target = target,
     .optimize = optimize,
     });
 
- 
-    Prog.root_module.addImport("decimal", zenlib_znd.module("decimal"));
-    Prog.root_module.addImport("zfield", zenlib_znd.module("zfield"));
-    Prog.root_module.addImport("sqlite", zenlib_sql.module("sqlite"));
+
+    Prog.root_module.addImport("zfield", zfield);
+
 
 
     b.installArtifact(Prog);
-
-
-
-
 
 }
