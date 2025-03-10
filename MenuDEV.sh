@@ -57,7 +57,8 @@ envCPP="1"
 envZIG="2"
 PROJECT="ZSQL"
 LIBPROJECT="/home/soleil/Zsql/"
-LIBRARY="/home/soleil/Zsql/library/"
+LIBTUI="/home/soleil/Zsql/libtui/"
+LIBZND="/home/soleil/Zsql/libznd/"
 LIBSQL="/home/soleil/Zsql/libsql/"
 choix=""
 
@@ -68,24 +69,22 @@ do
     f_cls
     f_dsplyPos  1  24 $faGras$fcJaune 'Project: '$faGras$fcCyan$PROJECT
 
-    f_dsplyPos  3  24 $faGras$fcJaune '------------compile cpp-----------------'
+    f_dsplyPos  2  24 $faGras$fcJaune '------------compile cpp-----------------'
 
-    f_dsplyPos  4  20 $faGras$fcRouge ' 1.'; f_dsplyPos  5  24 $faGras$fcGreen 'P???'
+    f_dsplyPos  4  24 $faGras$fcJaune '------------compile Zig-----------------'
 
-    f_dsplyPos  6  24 $faGras$fcJaune '------------compile Zig-----------------'
-
-    f_dsplyPos  8  20 $faGras$fcRouge' 10'; f_dsplyPos  8  24 $faGras$fcGreen 'Testsql'
-    f_dsplyPos 10  20 $faGras$fcRouge' 18'; f_dsplyPos 10  24 $faGras$fcGreen 'Zsqlite'
-    
+    f_dsplyPos  6  20 $faGras$fcRouge' 10'; f_dsplyPos  6  24 $faGras$fcGreen 'Testsql'
+    f_dsplyPos 10  20 $faGras$fcRouge' 14'; f_dsplyPos 10  24 $faGras$fcGreen 'Zsqlite'
+    f_dsplyPos 12  20 $faGras$fcRouge' 16'; f_dsplyPos 12  24 $faGras$fcGreen 'Zoned'
     f_dsplyPos 16  24 $faGras$fcJaune '----------------------------------------'
 
     f_dsplyPos 17  20 $faGras$fcRouge'33.'; f_dsplyPos 17  24 $faGras$fcGreen 'Debug codelldb'
 
     f_dsplyPos 19  20 $faGras$fcRouge'44.'; f_dsplyPos 19  24 $faGras$fcCyan  'enScript Printer'
 
-    f_dsplyPos 21  20 $faGras$fcRouge'50/51'; f_dsplyPos 21  26 $faGras$fcCyan  'Edit my library/libsql'
+    f_dsplyPos 21  20 $faGras$fcRouge'50/51/52'; f_dsplyPos 21  30 $faGras$fcCyan  'Edit my libtui/libznd/libsql'
 
-    f_dsplyPos 23  20 $faGras$fcRouge'55.'; f_dsplyPos 23  24 $faGras$fcCyan  'Edit my project'
+    f_dsplyPos 23  20 $faGras$fcRouge'60.'; f_dsplyPos 23  24 $faGras$fcCyan  'Edit my project'
 
     f_dsplyPos 24  20 $faGras$fcRouge'66.'; f_dsplyPos 24  24 $faGras$fcCyan  'Edit last source used'
 
@@ -108,7 +107,7 @@ do
 
 # APPTERM
 #        1)
-#            /home/soleil/.Terminal/dispatch.sh $envCPP $LIBPROJECT   "Psrc"
+#            /home/soleil/.Terminal/dispatch.sh $envCPP $LIBPROJECT   "APPTERM"
 #        ;;
 
 
@@ -116,12 +115,14 @@ do
         10)
             /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Testsql"
         ;;
-
 #Zsqlite"
-        18)
+        14)
             /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zsqlite"
         ;;
-
+#Zoned"
+        16)
+            /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zoned"
+        ;;
 
 #debug
         33)
@@ -133,20 +134,27 @@ do
             /home/soleil/.Terminal/enScript.sh  $LIBPROJECT
         ;;
 
-#library
+#libtui
         50)
-            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBRARY
+            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBTUI
             #sleep 2
             #break
         ;;
-#libsql
+#libzone
         51)
+            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBZND
+            #sleep 2
+            #break
+        ;;
+
+#libsql
+        52)
             /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBSQL
             #sleep 2
             #break
         ;;
 #project
-        55)
+        60)
             /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBPROJECT"src-zig"
             #sleep 2
             #break

@@ -3,8 +3,8 @@
 //----------------------
 
 const std = @import("std");
-const zfld = @import("zfield");
-const dcml = @import("decimal");
+const zfld = @import("zfield").ZFIELD;
+const dcml = @import("decimal").DCMLFX;
 const sql3 = @import("sqlite");
 
 
@@ -13,18 +13,18 @@ const stdin = std.io.getStdIn().reader();
 
 pub const contact = struct {
   id        : i32,
-  name      : zfld.ZFIELD  ,
-  prenom    : zfld.ZFIELD  ,
-  rue1      : zfld.ZFIELD  ,
-  rue2      : zfld.ZFIELD  ,
-  ville     : zfld.ZFIELD  ,
-  pays      : zfld.ZFIELD  ,
-  base      : dcml.DCMLFX  ,
-  taxe      : dcml.DCMLFX  ,
-  htx       : dcml.DCMLFX  ,
-  ttc       : dcml.DCMLFX  ,
-  date      : zfld.ZFIELD  ,
-  nbritem   : dcml.DCMLFX  ,
+  name      : zfld ,
+  prenom    : zfld ,
+  rue1      : zfld ,
+  rue2      : zfld ,
+  ville     : zfld ,
+  pays      : zfld ,
+  base      : dcml ,
+  taxe      : dcml ,
+  htx       : dcml ,
+  ttc       : dcml ,
+  date      : zfld ,
+  nbritem   : dcml ,
   ok        : bool,
   
 
@@ -34,18 +34,18 @@ pub const contact = struct {
         
         const rcd = contact {
             .id = 0,
-            .name   = zfld.ZFIELD.init(30) ,      
-            .prenom = zfld.ZFIELD.init(20) ,
-            .rue1   = zfld.ZFIELD.init(30) ,
-            .rue2   = zfld.ZFIELD.init(30) ,
-            .ville  = zfld.ZFIELD.init(20) ,
-            .pays   = zfld.ZFIELD.init(15) ,
-            .base   = dcml.DCMLFX.init(5,2) ,      
-            .taxe   = dcml.DCMLFX.init(1,2)  ,
-            .htx    = dcml.DCMLFX.init(11,2) ,
-            .ttc    = dcml.DCMLFX.init(30,4)  ,
-            .nbritem  = dcml.DCMLFX.init(5,0) ,
-            .date   = zfld.ZFIELD.init(10) ,
+            .name   = zfld.init(30) ,      
+            .prenom = zfld.init(20) ,
+            .rue1   = zfld.init(30) ,
+            .rue2   = zfld.init(30) ,
+            .ville  = zfld.init(20) ,
+            .pays   = zfld.init(15) ,
+            .base   = dcml.init(5,2) ,      
+            .taxe   = dcml.init(1,2)  ,
+            .htx    = dcml.init(11,2) ,
+            .ttc    = dcml.init(30,4)  ,
+            .nbritem  = dcml.init(5,0) ,
+            .date   = zfld.init(10) ,
             .ok = true,
         };
         
@@ -91,14 +91,14 @@ var client  = contact.initRecord();
 
     pause("start");
 
-    client.name.setZfld("AS400JPLPC") catch unreachable;
-    client.prenom.setZfld("Jean-Pierre") catch unreachable;
-    client.rue1.setZfld(" 01 rue du sud-ouest") catch unreachable;
-    client.ville.setZfld("Narbonne") catch unreachable;
-    client.pays.setZfld("France") catch unreachable;
-    client.base.setDcml("126.12") catch unreachable;
-    client.nbritem.setDcml("12345") catch unreachable;
-    client.taxe.setDcml("1.25") catch unreachable;
+    client.name.setZfld("AS400JPLPC");
+    client.prenom.setZfld("Jean-Pierre");
+    client.rue1.setZfld(" 01 rue du sud-ouest");
+    client.ville.setZfld("Narbonne");
+    client.pays.setZfld("France");
+    client.base.setDcml("126.12");
+    client.nbritem.setDcml("12345");
+    client.taxe.setDcml("1.25");
     
     
     pause("setp-1   INIT value"); 
@@ -107,16 +107,16 @@ var client  = contact.initRecord();
     pause(xx);
 
 
-    client.ttc.rate(client.base,client.nbritem,client.taxe) catch | err | dcml.dsperr(err);
+    client.ttc.rate(client.base,client.nbritem,client.taxe);
 
     xx = client.ttc.string();
 
-    client.htx.multTo(client.base,client.nbritem) catch | err | dcml.dsperr(err);
+    client.htx.multTo(client.base,client.nbritem);
     pause(xx);
 
  
     // only test
-    client.date.setZfld("2025-01-07") catch unreachable;
+    client.date.setZfld("2025-01-07");
 
 
     const clientSql = struct {
@@ -248,7 +248,7 @@ var client  = contact.initRecord();
     // // UPDATE
     {
         // for test value ttc big decimal check finance Force quoted values for DCML  
-   client.ttc.setDcml("912345678901234567890123456789.0123") catch unreachable;
+   client.ttc.setDcml("912345678901234567890123456789.0123");
         const allocator = std.heap.page_allocator;
         const sqlUpdate : []const u8 = std.fmt.allocPrint(allocator,
             "UPDATE Zoned SET (name,ttc,ok)=('{s}', \"{s}\",{d}) WHERE id='{d}'",

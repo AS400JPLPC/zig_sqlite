@@ -1,13 +1,12 @@
 const std = @import("std");
 const utf = @import("std").unicode;
+const builtin = @import("builtin");
 
-    var arenaZfld = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    var allocZfld = arenaZfld.allocator();
-	pub fn deinitZfld() void {
-	    arenaZfld.deinit();
-	    arenaZfld = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-	    allocZfld = arenaZfld.allocator();
-	}
+
+var arenaZfld = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+var allocZfld = arenaZfld.allocator();
+
+
 /// A variable length collection of characters
 pub const ZFIELD = struct {
 
@@ -20,14 +19,19 @@ pub const ZFIELD = struct {
     nbc : usize,
 
   
-    pub const CMP = enum { LT, EQ, GT };
+    pub const cmp = enum { lt, eq, gt };
 
-    pub const err : usize = 999999999;
+    pub fn deinitZfld() void {
+        arenaZfld.deinit();
+        arenaZfld = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        allocZfld = arenaZfld.allocator();
+    }
 
     /// Errors that may occur when using ZFIELD
     pub const Error = error{
         OutOfMemory,
         InvalidRange,
+        Uninitialized_zone
     };
 
     /// Creates a ZFIELD 
@@ -37,9 +41,9 @@ pub const ZFIELD = struct {
     /// // don't forget to deallocate
     /// defer _ = str.deinit();
     /// ```
-    /// nbrchar != 0 ---> zoned ex: setZoned getZoned  ... {normalize}
+    /// nbrchar != 0 ---> zoned ex: setZfld String  ... {normalize}
 
-     pub fn init(nbrchar : usize) ZFIELD {
+    pub fn init(nbrchar : usize) ZFIELD {
       	return  .{
             .buffer = null,
             .size = 0,
@@ -59,8 +63,9 @@ pub const ZFIELD = struct {
       
     }
 
+   
     /// Allocates space for the internal buffer
-    fn allocate(self: *ZFIELD, bytes: usize) Error!void {
+    fn allocate(self: *ZFIELD, bytes: usize) !void {
         if (self.buffer) |buffer| {
             if (self.size > 0) self.size = bytes; // Clamp size to capacity
             self.buffer = allocZfld.realloc(buffer, bytes) catch {
@@ -75,6 +80,14 @@ pub const ZFIELD = struct {
 
     /// Returns the size of the internal buffer
     pub fn capacity(self: ZFIELD) usize {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.buffer) |buffer| return buffer.len;
         return 0;
     }
@@ -85,14 +98,22 @@ pub const ZFIELD = struct {
     }
 
     /// Returns amount of characters in the ZFIELD
-    pub fn len(self: ZFIELD) usize {
+    pub fn count(self: ZFIELD) usize {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.buffer) |buffer| {
             var length: usize = 0;
             var i: usize = 0;
 
             while (i < self.size) {
-                i += ZFIELD.getUTF8Size(buffer[i]);
                 length += 1;
+                i += ZFIELD.getUTF8Size(buffer[i]);
             }
 
             return length;
@@ -101,84 +122,110 @@ pub const ZFIELD = struct {
         }
     }
 
-    
 
-
-
-
-
-     /// Clears the contents of the ZFIELD but leaves the capacity
+    /// Clears the contents of the ZFIELD but leaves the capacity
     pub fn clear(self: *ZFIELD) void {
-       self.buffer = null;
-       self.size = 0;
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        self.buffer = null;
+        self.size = 0;
     }
 
-    /// Compares this ZFIELD with a ZFIELD literal
-    pub fn cmpeql(self: ZFIELD, literal: []const u8) bool {
-        if (self.buffer) |buffer| {
-            return std.mem.eql(u8, buffer[0..self.size], literal);
+    /// Compares this ZFIELD with a ZFIELD literalf
+    pub fn cmpeql(self: ZFIELD, src: ZFIELD) bool {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
         }
-        return false;
+        var str1:[]const u8 = "";
+        var str2:[]const u8 = "";
+        if (self.buffer )| buf1 | {str1= buf1;}
+        if (src.buffer)  | buf2 | {str2= buf2;}
+        return std.mem.eql(u8, str1, str2);
+    }
+    pub fn cmpeqlStr(self: ZFIELD, src: [] const u8) bool {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        var str1:[]const u8 = "";
+        if (self.buffer )| buf1 | {str1= buf1;}
+        return std.mem.eql(u8, str1, src);
     }
 
     /// comp string
-    /// LT EQ GT -> enum CMP
-    pub fn cmpxx(self: ZFIELD, literal: []const u8) ZFIELD.CMP {
-        const str1 = self.getStr();
-        const order = std.mem.order(u8, str1, literal);
+    /// lt eq gt -> enum cmp
+    pub fn cmpxx(self: ZFIELD, src: ZFIELD) ZFIELD.cmp {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        var str1:[]const u8 = "";
+        var str2:[]const u8 = "";
+        if (self.buffer )| buf1 | {str1= buf1;}
+        if (src.buffer)  | buf2 | {str2= buf2;}
+        const order = std.mem.order(u8, str1, str2);
         switch (order) {
-            .lt => return CMP.LT,
-            .eq => return CMP.EQ,
-            .gt => return CMP.GT,
+            .lt => return cmp.lt,
+            .eq => return cmp.eq,
+            .gt => return cmp.gt,
+        }
+    }
+    pub fn cmpxxStr(self: ZFIELD, src: [] const u8) ZFIELD.cmp {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        var str1:[]const u8 = "";
+        if (self.buffer )| buf1 | {str1= buf1;}
+        const order = std.mem.order(u8, str1, src);
+        switch (order) {
+            .lt => return cmp.lt,
+            .eq => return cmp.eq,
+            .gt => return cmp.gt,
         }
     }
 
-    /// check normalise for sql or screen or buffering 
-    pub fn check( self: *ZFIELD) bool {
-        if ( self.len() > self.nbc) return false ;
-        return true ; 
-    }
-
-
-
-    /// get string  for sql or buffering  screen
-    pub fn string(self: *ZFIELD) [] const u8 {
-        self.normalize();
-        if (self.buffer) |buffer| return buffer[0..self.size];
-        return "";
-    }
-
-
-    /// getStr buffer
-    fn getStr(self: ZFIELD) [] const u8 {
-          if (self.buffer) |buffer| return buffer[0..self.size];
-        return "";
-    }
-
-    /// Sets Literal
-    /// Be careful not to exceed, but can be useful in certain cases
-    pub fn setFull(self: *ZFIELD, literal: []const u8) Error!void {
-        self.clear();
-        try self.allocate(literal.len);
-         if (self.buffer) |buffer| {
-            var  i : usize = 0;
-            while (i < literal.len) : (i += 1) {
-                 buffer[i] = literal[i];
-            }
-            self.size = literal.len;
-         }
-    }
-
     /// Sets Literal the contents of the ZFIELD of normalize
-    pub fn setZfld(self: *ZFIELD, literal: []const u8) Error!void {
+    pub fn setZfld(self: *ZFIELD, literal: []const u8) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         self.clear();
-        try self.allocate(literal.len);
+        if (literal.len == 0) return;
+        self.allocate(literal.len) catch unreachable;
          if (self.buffer) |buffer| {
             var  i : usize = 0;
             while (i < literal.len) : (i += 1) {
                  buffer[i] = literal[i];
             }
-            self.size = literal.len;
             self.normalize();
         }
     }
@@ -188,7 +235,6 @@ pub const ZFIELD = struct {
          if (self.buffer) |buffer| {
             var length: usize = 0;
             var i: usize = 0;
-
             while (i < self.size) {
                 i += ZFIELD.getUTF8Size(buffer[i]);
                 length += 1;
@@ -201,119 +247,175 @@ pub const ZFIELD = struct {
         self.size = self.capacity(); 
     }
 
-    /// returns string from a given range
-    pub fn getSubstr(self: ZFIELD, start: usize, end: usize ) ! []const u8 {
-        if (self.buffer) |buffer| {
-            if (ZFIELD.getIndex(buffer, start, true)) |rStart| {
-                if (ZFIELD.getIndex(buffer, end, true)) |rEnd| {
-                    if (rEnd < rStart or rEnd > self.size) return Error.InvalidRange;
-                    return(buffer[rStart..rEnd]);
-                }
-            }
+
+
+    /// Returns the Field string
+    pub fn string(self: *ZFIELD) [] const u8 {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
         }
+        self.normalize();
+        if (self.buffer) |buffer| return buffer[0..self.size];
         return "";
-     }
+    }
 
+    // getStr buffer
+    fn getStr(self: ZFIELD) [] const u8 {
+        if (self.buffer) |buffer| return buffer[0..self.size];
+        return "";
+    }
 
+ 
     /// Copies this String into a new one
-    /// User is responsible for managing the new String
-    pub fn clone(self: ZFIELD) Error!ZFIELD {
+    pub fn clone(self: ZFIELD) ZFIELD {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         var newString = ZFIELD.init(self.nbc);
-        try newString.setZfld(self.getStr());
+        newString.setZfld(self.getStr());
         return newString;
     }
 
+    /// Copies this String into a new one
+    pub fn copy(self: *ZFIELD, src: ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        self.clear();
+        if (src.buffer) |buffer| { self.setZfld(buffer[0..src.size]); }
+        self.normalize();
+    }
+
     /// Removes the last character from the ZFIELD
-    pub fn pop(self: *ZFIELD) ?[]const u8 {
-        if (self.size == 0) return null;
+    pub fn pop(self: *ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        if (self.size == 0) return;
+        // char last
+        if (self.buffer) |buffer| { 
+            self.size = ZFIELD.getIndex(buffer, self.count() - 1).?;
+            self.allocate(self.size) catch unreachable;
+        }
+    }
+
+
+    /// Returns the real index of a unicode ZFIELD literal
+    fn getIndex(unicode: []const u8, index: usize) ?usize {
+        var s: usize = 0;
+        var c: usize = 0;
+        while (s <= unicode.len) : ( c += 1){
+            if (c == index) return s;
+            s += ZFIELD.getUTF8Size(unicode[c]);
+        }
+        return null;
+    }
+
+    /// returns string from a given range caracter 1.. self.nbc
+    /// Start from the character- addEnd to the character
+    pub fn substr(self:*ZFIELD, src : ZFIELD,  start: usize, end: usize ) void {
+        if ( self.nbc == 0 or src.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc=0  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+            if (start + end > src.count() or start == src.count() or end == 0 ){
+            if (builtin.mode == .Debug) {
+                const s = @src();
+                @panic( std.fmt.allocPrint(allocZfld,
+                "\n\n\r file:{s} line:{d} column:{d} func:{s}('{s}','{s}',{d},{d})  err:{}\n\r"
+                ,.{s.file, s.line, s.column,s.fn_name,self.getStr(),src.getStr(),start, end,Error.InvalidRange})
+                    catch unreachable
+                );
+            }
+            else return;
+        }
+        const nEnd  = start + end  ;
+        if (src.buffer) |buffer| {
+            if (ZFIELD.getIndex(buffer, start)) |rStart| {
+                 if (ZFIELD.getIndex(buffer, nEnd )) |rEnd| {
+                    self.setZfld(buffer[rStart..rEnd]);
+                }
+            }
+        }
+    }
+
+    
+
+    /// Removes a range of character from the String caracter 1.. self.nbc
+    /// Start from the character- addEnd to the character
+    pub fn remove(self: *ZFIELD, start: usize, end: usize) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+            if (start + end > self.count() or start == self.count() or end == 0 ){
+            if (builtin.mode == .Debug) {
+                const s = @src();
+                @panic( std.fmt.allocPrint(allocZfld,
+                "\n\n\r file:{s} line:{d} column:{d} func:{s}('{s}',{d},{d})  err:{}\n\r"
+                ,.{s.file, s.line, s.column,s.fn_name,self.getStr(),start,end,Error.InvalidRange})
+                    catch unreachable
+                );
+
+            }
+            else return;
+        }
 
         if (self.buffer) |buffer| {
+            const nEnd  = start + end  ;
+            const rStart = ZFIELD.getIndex(buffer, start ).?;
+            var rEnd = ZFIELD.getIndex(buffer, nEnd).?;
+
+            var buf = allocZfld.alloc(u8, self.nbc) catch  unreachable;
+            defer allocZfld.free(buf);
+   
             var i: usize = 0;
-            while (i < self.size) {
-                const size = ZFIELD.getUTF8Size(buffer[i]);
-                if (i + size >= self.size) break;
-                i += size;
+            while (i < rStart) : (i += 1) {
+                 buf[i] = buffer[i];
             }
 
-            const ret = buffer[i..self.size];
-            self.size -= (self.size - i);
-            return ret;
+            // if ( nEnd < self.count() and rEnd > 0) {
+                while ( rEnd < self.count()) : (rEnd += 1)  {
+                    buf[i] = buffer[rEnd];
+                    i +=1;
+                }
+            // }
+                
+            buf = allocZfld.realloc(buf, i) catch unreachable;
+            
+            self.setZfld(buf[0..buf.len]);
         }
-
-        return null ;
-    }
-
-    /// Removes a character at the specified index
-    pub fn remove(self: *ZFIELD, index: usize) !bool {
-        if (index > self.size) return false;
-        if (index < self.size ) try self.removeRange(index, index + 1)
-        else {
-            // char last
-            if (self.buffer) |buffer| { 
-                const rEnd = ZFIELD.getIndex(buffer, index - 1, true).?;
-                self.size = rEnd;
-                try self.allocate(self.size);
-            }
-        }
-        return true;
-    }
-
-    /// Removes a range of character from the String
-    /// Start (inclusive) - End (Exclusive)
-    fn removeRange(self: *ZFIELD, start: usize, end: usize) Error!void {
-        const length = self.len();
-        if (end < start or end > length) return Error.InvalidRange;
-
-        if (self.buffer) |buffer| {
-            const rStart = ZFIELD.getIndex(buffer, start, true).?;
-            const rEnd = ZFIELD.getIndex(buffer, end, true).?;
-            const difference = rEnd - rStart;
-
-            var i: usize = rEnd;
-            while (i < self.size) : (i += 1) {
-                buffer[i - difference] = buffer[i];
-            }
-            self.size -= difference;
-            try self.allocate(self.size);
-        }
-    }
-
-
-
-
-
-
-
-    /// Returns an owned slice of this ZFIELD
-    pub fn toOwned(self: ZFIELD) Error!?[]u8 {
-        if (self.buffer != null) {
-            const txt = self.str();
-            if (allocZfld.alloc(u8, ZFIELD.len)) |newStr| {
-                std.mem.copyForwards(u8, newStr, txt);
-                return newStr;
-            } else |_| {
-                return Error.OutOfMemory;
-            }
-        }
-        return ;
      }
 
-    /// Returns a character at the specified index
-    pub fn charAt(self: ZFIELD, index: usize) ?[]const u8 {
-        if (self.buffer) |buffer| {
-            if (ZFIELD.getIndex(buffer, index, true)) |i| {
-                const size = ZFIELD.getUTF8Size(buffer[i]);
-                return buffer[i..(i + size)];
-            }
-        }
-        return ;
-    }
-
-
-
-
-
-
+ 
     /// Checks the ZFIELD is empty
     pub inline fn isEmpty(self: ZFIELD) bool {
         if ( self.size > 0) return false ;
@@ -321,35 +423,57 @@ pub const ZFIELD = struct {
     }
 
     /// Finds the first occurrence of the ZFIELD literal
-    pub fn find(self: ZFIELD, literal: []const u8) usize {
+    pub fn find(self: ZFIELD, literal: []const u8) ?usize {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.buffer) |buffer| {
-            const index = std.mem.indexOf(u8, buffer[0..self.size], literal);
-            if (index) |i| {
-                return ZFIELD.getIndex(buffer, i, false) orelse err;
+            if (std.mem.indexOf(u8, buffer[0..self.size], literal)) |value| {
+                return ZFIELD.getIndex(buffer, value ) orelse return null;
             }
         }
-        return err ;
-    }
+        return null;
+     }
 
     /// Finds the last occurrence of the ZFIELD literal
-    pub fn rfind(self: ZFIELD, literal: []const u8) usize {
+    pub fn rfind(self: ZFIELD, literal: []const u8) ?usize {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.buffer) |buffer| {
-            const index = std.mem.lastIndexOf(u8, buffer[0..self.size], literal);
-            if (index) |i| {
-                return ZFIELD.getIndex(buffer, i, false) orelse err;
+            if (std.mem.lastIndexOf(u8, buffer[0..self.size], literal)) |value| {
+                return ZFIELD.getIndex(buffer, value) orelse null;
             }
         }
 
-        return err ;
+        return null;
     }
 
-    /// Finds the position occurrence of the string literal
+
+    /// Finds the position occurrence of the string literal:
     pub fn findPos(self: ZFIELD, pos: usize , literal: []const u8) ?usize {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (pos <= self.size) {
             if (self.buffer) |buffer| {
-                const index = std.mem.indexOf(u8, buffer[pos..self.size], literal);
-                if (index) |i| {
-                    return ZFIELD.getIndex(buffer, i + pos, false);
+                if (std.mem.indexOf(u8, buffer[pos..self.size], literal)) |value| {
+                    return ZFIELD.getIndex(buffer, value + pos ) orelse null;
                 }
             }
         }
@@ -357,92 +481,22 @@ pub const ZFIELD = struct {
     }
 
 
-
-
-
-
-    // Iterator support
-    pub const zfldIterator = struct {
-        ZFIELD: *const ZFIELD,
-        index: usize,
-
-        pub fn next(it: *zfldIterator) ?[]const u8 {
-            if (it.ZFIELD.buffer) |buffer| {
-                if (it.index == it.ZFIELD.size) return null;
-                const i = it.index;
-                it.index += ZFIELD.getUTF8Size(buffer[i]);
-                 return buffer[i..it.index];
-            } else {
-                return null;
-            }
-        }
-        pub fn preview(it: *zfldIterator) ?[]const u8 {
-            if (it.index == 0 ) return null;
-            if (it.ZFIELD.buffer) |buffer| {
-                const i = it.index;
-                it.index -= ZFIELD.getUTF8Size(buffer[i]);
-                return buffer[i..it.index];
-            } else {
-                return null;
-            }
-        }
-    };
-
-
-
-    pub fn iterator(self: *const ZFIELD) zfldIterator {
-        return zfldIterator{
-            .ZFIELD = self,
-            .index = 0,
-        };
-    }
-
-    /// Checks if byte is part of UTF-8 character
-    inline fn isUTF8Byte(byte: u8) bool {
-        return ((byte & 0x80) > 0) and (((byte << 1) & 0x80) == 0);
-    }
-
-    /// Returns the real index of a unicode ZFIELD literal
-    fn getIndex(unicode: []const u8, index: usize, real: bool) ?usize {
-        var i: usize = 0;
-        var j: usize = 0;
-        while (i < unicode.len) {
-            if (real) {
-                if (j == index) return i;
-            } else {
-                if (i == index) return j;
-            }
-            i += ZFIELD.getUTF8Size(unicode[i]);
-            j += 1;
-        }
-        return null;
-    }
-
-    /// Returns the UTF-8 character's size
-    inline fn getUTF8Size(char: u8) u3 {
-        return std.unicode.utf8ByteSequenceLength(char) catch {
-            return 1;
-        };
-    }
-
-
-
-
-
-
-
     /// Appends a character onto the end of the ZFIELD
-    /// Be careful not to exceed, but can be useful in certain cases
-    pub fn concat(self: *ZFIELD, literal: []const u8) Error!void {
+    pub fn concatStr(self: *ZFIELD, literal: []const u8) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         // Make sure buffer has enough space
         const index : usize = self.capacity(); 
-        if (self.buffer) |buffer| {
-            if (self.size + literal.len > buffer.len) {
-                try self.allocate((self.size + literal.len));
-            }
-        } else {
-            try self.allocate(literal.len);
-        }        const buffer = self.buffer.?;
+
+        self.allocate((self.size + literal.len)) catch unreachable;
+
+        const buffer = self.buffer.?;
 
         // If not, then copy contents over and insert literal.
         var i: usize = 0;
@@ -450,46 +504,34 @@ pub const ZFIELD = struct {
             buffer[index + i] = literal[i];
         }
         self.size = buffer.len;
-    }
-
-    /// Replaces all occurrences of a ZFIELD literal with another
-    /// Be careful not to exceed, but can be useful in certain cases
-    pub fn replace(self: *ZFIELD, needle: []const u8, replacement: []const u8) !bool {
-        if (self.buffer) |buffer| {
-            const InputSize = self.size;
-            const size = std.mem.replacementSize(u8, buffer[0..InputSize], needle, replacement);
-            defer allocZfld.free(buffer);
-            self.buffer = allocZfld.alloc(u8, size) catch {
-                return Error.OutOfMemory;
-            };
-            self.size = size;
-            const changes = std.mem.replace(u8, buffer[0..InputSize], needle, replacement, self.buffer.?);
-            if (changes > 0) {
-                return true;
-            }
-        }
-        return false;
+        self.normalize();
     }
 
 
-   /// Reverses the characters in this ZFIELD
-    pub fn reverse(self: *ZFIELD) void {
-        if (self.buffer) |buffer| {
-            var i: usize = 0;
-            while (i < self.size) {
-                const size = ZFIELD.getUTF8Size(buffer[i]);
-                if (size > 1) std.mem.reverse(u8, buffer[i..(i + size)]);
-                i += size;
-            }
-
-            std.mem.reverse(u8, buffer[0..self.size]);
-        }
-    }
 
 
     /// truncat 
-    fn truncat(self: *ZFIELD, index: usize) ! void{
-        if (self.nbc < index) return Error.InvalidRange;
+    pub fn truncat(self: *ZFIELD, index: usize) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        if (index > self.nbc ){
+            if (builtin.mode == .Debug) {
+                const s = @src();
+                @panic( std.fmt.allocPrint(allocZfld,
+                "\n\n\r file:{s} line:{d} column:{d} func:{s}('{s}',{d})  err:{}\n\r"
+                ,.{s.file, s.line, s.column,s.fn_name,self.getStr(),index,Error.InvalidRange})
+                    catch unreachable
+                );
+
+            }
+            else return;
+        }
         if (self.buffer) |buffer| {
             var length: usize = 0;
             var i: usize = 0;
@@ -503,10 +545,84 @@ pub const ZFIELD = struct {
                 }
             }
          }
-        self.size = self.capacity(); 
+        self.normalize();
     }
 
 
+
+    pub fn concat(self:*ZFIELD, src : ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        // Make sure buffer has enough space
+        const index : usize = self.capacity(); 
+
+        self.allocate((self.size + src.size)) catch unreachable;
+
+        const buf = self.buffer.?;
+
+        // If not, then copy contents over and insert src buffer.
+        var i: usize = 0;
+        if (src.buffer) |buffer| {
+            while (i < src.size) : (i += 1) {
+                buf[index + i] = buffer[i];
+            }    
+        }
+        self.normalize();
+    }
+
+
+
+
+    /// Replaces all occurrences of a ZFIELD literal with another
+    pub fn replace(self: *ZFIELD, needle: []const u8, arg: []const u8) bool {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        if (self.buffer) |buffer| {
+            const InputSize = self.size;
+            const size = std.mem.replacementSize(u8, buffer[0..InputSize], needle, arg);
+            const buf = allocZfld.alloc(u8, size) catch unreachable;
+            defer allocZfld.free(buf);
+            const changes = std.mem.replace(u8, buffer, needle, arg, buf);
+            self.setZfld(buf[0..buf.len]);
+            if (changes > 0) return true;
+        }
+        return false;
+    }
+
+
+   /// Reverses the characters in this ZFIELD
+    pub fn reverse(self: *ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        if (self.buffer) |buffer| {
+            var i: usize = 0;
+            while (i < self.size) {
+                const size = ZFIELD.getUTF8Size(buffer[i]);
+                if (size > 1) std.mem.reverse(u8, buffer[i..(i + size)]);
+                i += size;
+            }
+
+            std.mem.reverse(u8, buffer[0..self.size]);
+        }
+    }
 
 
 
@@ -515,6 +631,14 @@ pub const ZFIELD = struct {
     /// Converts all (UTF8) uppercase letters to lowercase
     /// String Latin
     pub fn lowercase(self: *ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.buffer) |_| {
     	    var i :usize = 0;
     	    var iter = self.iterator();
@@ -532,15 +656,24 @@ pub const ZFIELD = struct {
     				zone = [_]u8{0} ** 4;
     				i = utf.utf8Encode(r,&zone) catch unreachable;
     				car = zone[0..i];
-    				_= self.replace(ch,car) catch unreachable;
+    				_=self.replace(ch,car);
     			}
-         	}
-        }	
+        	}
+        }
     }
+
 
 
     /// upper-case String Latin
     pub fn uppercase(self: *ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
     	if (self.buffer) |_| {
     	    var i :usize = 0;
     	    var iter = self.iterator();
@@ -549,7 +682,7 @@ pub const ZFIELD = struct {
         	var r : u21 = 0 ;
         	while (iter.next()) |ch | {
         	    const x = utf.utf8Decode(ch) catch unreachable;
-         		r = 0 ;
+                r = 0 ;
         		if ( x >= 97 and x <= 122 )  r = x - 32;
                 if ( x >= 224 and x <= 255 )  r = x - 32;
                 if ( x == 339 )  r = x - 1;
@@ -558,14 +691,23 @@ pub const ZFIELD = struct {
     				zone = [_]u8{0} ** 4;
     				i = utf.utf8Encode(r,&zone) catch unreachable;
     				car = zone[0..i];
-    				_= self.replace(ch,car) catch unreachable;
+    				_=self.replace(ch,car);
     			}
-         	}
-        }	
+            }
+        }
     }
+
 
     /// upper-case String Latin
     pub fn capitalized(self: *ZFIELD) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
     	if (self.buffer) |_| {
     	    var i :usize = 0;
     	    var iter = self.iterator();
@@ -584,7 +726,7 @@ pub const ZFIELD = struct {
                     continue;
                 }
                 if (is_new_word) {
-             		r = 0 ;
+                    r = 0 ;
             		if ( x >= 97 and x <= 122 )  r = x - 32;
                     if ( x >= 224 and x <= 255 )  r = x - 32;
                     if ( x == 339 )  r = x - 1;
@@ -604,82 +746,83 @@ pub const ZFIELD = struct {
     				car = "";
     				car = zone[0..i];
     				str = std.fmt.allocPrint(allocZfld, "{s}{s}", .{str ,car}) catch unreachable;
-        		}	
+        		}
              }
-            self.setZfld(str) catch unreachable;
-            defer allocZfld.free(str);         }	
-    }
-
-
-
-
-
-
-   /// Checks whether or not a character is whitelisted
-    fn inWhitelist(char: u8, whitelist: []const u8) bool {
-        var i: usize = 0;
-        while (i < whitelist.len) : (i += 1) {
-            if (whitelist[i] == char) return true;
+            self.setZfld(str);
+            defer allocZfld.free(str);
         }
-        return false;
     }
 
 
     /// Trims all whitelist characters at the start of the ZFIELD.
-    pub fn trimStart(self: *ZFIELD, whitelist: []const u8) void {
-        if (self.buffer) |buffer| {
-            var i: usize = 0;
-            while (i < self.size) : (i += 1) {
-                const size = ZFIELD.getUTF8Size(buffer[i]);
-                if (size > 1 or !inWhitelist(buffer[i], whitelist)) break;
-            }
-
-            if (ZFIELD.getIndex(buffer, i, false)) |k| {
-                self.removeRange(0, k) catch {};
-            }
-        }
-    }
-
-    /// Trims all whitelist characters at the end of the ZFIELD.
-    pub fn trimEnd(self: *ZFIELD, whitelist: []const u8) void {
-        self.reverse();
-        self.trimStart(whitelist);
-        self.reverse();
-    }
-
-    /// Trims all whitelist characters from both ends of the ZFIELD
     pub fn trim(self: *ZFIELD, whitelist: []const u8) void {
-        self.trimStart(whitelist);
-        self.trimEnd(whitelist);
-    }
-
-
-
-
-
-
-    /// Checks the start of the ZFIELD against a literal
-    pub fn inStartsWith(self: *ZFIELD, literal: []const u8) bool {
-        if (self.buffer) |buffer| {
-            const index = std.mem.indexOf(u8, buffer[0..self.size], literal);
-            return index == 0;
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
         }
-        return false;
+        if (self.buffer) |buffer| {
+            var buf = allocZfld.alloc(u8, self.size) catch unreachable;
+            defer allocZfld.free(buf);
+            buf = buffer[0..self.size];
+            self.setZfld(std.mem.trim(u8,buf,whitelist));
+            self.normalize();
+        }
     }
 
-    /// Checks the end of the ZFIELD against a literal
-    pub fn inEndsWith(self: *ZFIELD, literal: []const u8) bool {
-        if (self.buffer) |buffer| {
-            const index = std.mem.lastIndexOf(u8, buffer[0..self.size], literal);
-            const i: usize = self.size - literal.len;
-            return index == i;
+    /// Trim-left whitelist characters at the start of the ZFIELD.
+    pub fn trimLeft(self: *ZFIELD, whitelist: []const u8) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
         }
-        return false;
+        if (self.buffer) |buffer| {
+            var buf = allocZfld.alloc(u8, self.size) catch unreachable;
+            defer allocZfld.free(buf);
+            buf = buffer[0..self.size];
+            self.setZfld(std.mem.trimLeft(u8,buf,whitelist));
+            self.normalize();
+        }
     }
+
+    /// Trim-left whitelist characters at the start of the ZFIELD.
+    pub fn trimRight(self: *ZFIELD, whitelist: []const u8) void {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        if (self.buffer) |buffer| {
+            var buf = allocZfld.alloc(u8, self.size) catch unreachable;
+            defer allocZfld.free(buf);
+            buf = buffer[0..self.size];
+            self.setZfld(std.mem.trimRight(u8,buf,whitelist));
+            self.normalize();
+        }
+    }
+
+
 
     /// Checks if the needle ZFIELD is within the source ZFIELD
-    pub fn includesZFIELD(self: *ZFIELD, needle: ZFIELD) bool {
-
+    pub fn check(self: *ZFIELD, needle: ZFIELD) bool {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.size == 0 or needle.size == 0) return false;
 
         if (self.buffer) |buffer| {
@@ -696,8 +839,15 @@ pub const ZFIELD = struct {
     }
 
     /// Checks if the needle literal is within the source ZFIELD
-    pub fn includesStr(self: *ZFIELD, needle: []const u8) bool {
-
+    pub fn checkStr(self: *ZFIELD, needle: []const u8) bool {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
         if (self.size == 0 or needle.len == 0) return false;
 
         if (self.buffer) |buffer| {
@@ -711,8 +861,91 @@ pub const ZFIELD = struct {
         return false;
     }
 
+
+
+    /// Returns a character at the specified index
+    pub fn charAt(self: ZFIELD, index: usize) []const u8 {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        if (index > self.count()){
+            if (builtin.mode == .Debug) {
+                const s = @src();
+                @panic( std.fmt.allocPrint(allocZfld,
+                "\n\n\r file:{s} line:{d} column:{d} func:{s}({s},{d})  err:{}\n\r"
+                ,.{s.file, s.line, s.column,s.fn_name,self.getStr(),index,Error.InvalidRange})
+                    catch unreachable
+                );
+            }
+            else return "NAN";
+        }
+        if (self.buffer) |buffer| {
+            if (ZFIELD.getIndex(buffer, index)) |i| {
+                const size = ZFIELD.getUTF8Size(buffer[i]);
+                return buffer[i..(i + size)];
+            }
+        }
+        return "NAN";
+    }
+
+
+//--------------------------------------
+// ITERATOR
+//--------------------------------------
+
+    // Iterator support
+    pub const zfldIterator = struct {
+        ZFIELD: *const ZFIELD,
+        index: usize,
+
+        pub fn next(it: *zfldIterator) ?[]const u8 {
+            if (it.ZFIELD.buffer) |buffer| {
+                if (it.index == it.ZFIELD.size) return null;
+                const i = it.index;
+                it.index += ZFIELD.getUTF8Size(buffer[i]);
+                 return buffer[i..it.index];
+            }
+            else return null;
+        }
+    };
+
+
+
+    pub fn iterator(self: *const ZFIELD) zfldIterator {
+        if ( self.nbc == 0 ) {
+            const s = @src();
+                    @panic( std.fmt.allocPrint(allocZfld,
+                    "\n\n\r file:{s} line:{d} column:{d} func:{s}() not init or denit field.nbc={d}  err:{}\n\r"
+                    ,.{s.file, s.line, s.column,s.fn_name,self.nbc,error.Uninitialized_zone})
+                        catch unreachable
+                    );
+        }
+        return zfldIterator{
+            .ZFIELD = self,
+            .index = 0,
+        };
+    }
+
+    /// Checks if byte is part of UTF-8 character
+    inline fn isUTF8Byte(byte: u8) bool {
+        return ((byte & 0x80) > 0) and (((byte << 1) & 0x80) == 0);
+    }
+
+
+    /// Returns the UTF-8 character's size
+    inline fn getUTF8Size(char: u8) u3 {
+        return std.unicode.utf8ByteSequenceLength(char) catch { return 1; };
+    }
+
+
+
+
     pub fn debugContext (self : ZFIELD) void {
-        const str = self.getStr();
-        std.debug.print("\ndebug   buffer:>{s}<  size: {d} nbc: {d}\n",.{str , self.size, self.nbc  });
+        std.debug.print("\ndebug   buffer:>{s}<  size: {d} nbc: {d}\n",.{self.getStr(), self.size, self.nbc  });
     }
 };

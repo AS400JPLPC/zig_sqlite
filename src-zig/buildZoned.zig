@@ -19,9 +19,11 @@ pub fn build(b: *std.Build) void {
 
     const Prog = b.addExecutable(.{
     .name = "Zoned",
-    .root_source_file = b.path( "./Zoned.zig" ),
-    .target = target,
-    .optimize = optimize,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path( "./Zoned.zig" ),
+        .target = target,
+        .optimize = optimize,
+    }),
     });
 
  
