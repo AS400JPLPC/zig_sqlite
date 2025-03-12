@@ -327,19 +327,19 @@ fn setStyle(style: [4]u32) void {
 }
 
 /// Sets the terminal's foreground color.
-fn setForegroundColor(color: BackgroundColor) void {
+fn setForegroundColor(color: ForegroundColor) void {
     stdout.print("\x1b[{d}m", .{@intFromEnum(color)}) catch {};
 }
 
 /// Sets the terminal's Background color.
-fn setBackgroundColor(color: ForegroundColor) void {
+fn setBackgroundColor(color: BackgroundColor) void {
     stdout.print("\x1b[{d}m", .{@intFromEnum(color)}) catch {};
 }
 
 /// write text and attribut
 pub fn writeStyled(text: []const u8, attribut: ZONATRB) void {
-    setForegroundColor(attribut.backgr);
-    setBackgroundColor(attribut.foregr);
+    setForegroundColor(attribut.foregr);
+    setBackgroundColor(attribut.backgr);
     setStyle(attribut.styled);
     stdout.print("{s}\x1b[0m", .{text}) catch {};
 }

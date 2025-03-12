@@ -13,6 +13,9 @@ pub const CMP = enum { LT, EQ, GT };
 
 pub const ALIGNS = enum { left, rigth };
 
+
+
+
 ///------------------------------------
 /// utility
 ///------------------------------------
@@ -68,47 +71,76 @@ pub fn usizeToStr(v: usize) []const u8 {
     };
 }
 
+
+
 /// Iterator support iteration string
 pub const iteratStr = struct {
+	var strbuf:[] const u8 = undefined;
 
-    pub const StringIterator = struct {
-        buf: []u8,
-        index: usize,
-
-        /// Deallocates the internal buffer
-        pub fn deinit(self: *StringIterator) void {
-            if (self.buf.len > 0) allocUtl.free(self.buf);
-            self.index = 0;
-        }
+	/// Errors that may occur when using String
+	pub const ErrNbrch = error{
+		InvalideAllocBuffer,
+	};
+	
 
 
-        pub fn next(it: *StringIterator) ?[]const u8 {
-            if ( it.buf.len == 0 ) return null;
-            
-            if (it.index >= it.buf.len) return null;
-            const i = it.index;
-            it.index += getUTF8Size(it.buf[i]);
-            return it.buf[i..it.index];
-        }
+	pub const StringIterator = struct {
+		buf: []u8 ,
+		index: usize ,
 
-    };
 
-    /// iterator String
-    pub fn iterator(str: []const u8) StringIterator {
+		fn allocBuffer ( size :usize) ErrNbrch![]u8 {
+			const buf = allocUtl.alloc(u8, size) catch {
+				return ErrNbrch.InvalideAllocBuffer;
+			};
+			return buf;
+		}
 
-        return StringIterator{
-            .buf = allocUtl.dupe(u8,str) catch unreachable,
-            .index = 0,
-        };
-    }
+		/// Deallocates the internal buffer
+		pub fn deinit(self: *StringIterator) void {
+			if (self.buf.len > 0)	allocUtl.free(self.buf);
+			strbuf = undefined;
+		}
 
-    /// Returns the UTF-8 character's size
-    fn getUTF8Size(char: u8) u3 {
-        return std.unicode.utf8ByteSequenceLength(char) catch |err| {
-            @panic(@errorName(err));
-        };
-    }
+		pub fn next(it: *StringIterator) ?[]const u8 {
+			const optional_buf: ?[]u8	= allocBuffer(strbuf.len) catch return null;
+			
+			it.buf= optional_buf orelse "";
+			var idx : usize = 0;
+
+			while (true) {
+				if (idx >= strbuf.len) break;
+				it.buf[idx] = strbuf[idx];
+				idx += 1;
+			}
+
+			if (it.index == it.buf.len) return null;
+			idx = it.index;
+			it.index += getUTF8Size(it.buf[idx]);
+			return it.buf[idx..it.index];
+		}
+
+	};
+
+	/// iterator String
+	pub fn iterator(str:[] const u8) StringIterator {
+		// strbuf = std.fmt.allocPrint(allocUtl,"{s}", str) catch |err| {@panic(@errorName(err));};
+        strbuf = str;
+		return StringIterator{
+			.buf = undefined,
+			.index = 0,
+		};
+	}
+
+	/// Returns the UTF-8 character's size
+	fn getUTF8Size(char: u8) u3 {
+		return std.unicode.utf8ByteSequenceLength(char) 
+			catch |err| { @panic(@errorName(err));};
+	}
 };
+
+
+
 
 /// number characters String
 pub fn nbrCharStr(str: []const u8) usize {
@@ -175,14 +207,10 @@ pub fn isLowerStr(str: []const u8) bool {
 
 /// is String isDigit
 pub fn isDigitStr(str: []const u8) bool {
-    var iter = iteratStr.iterator(str);
-    defer iter.deinit();
     var b: bool = true;
-
-    while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| {
         switch (x) {
             '0'...'9' => continue,
             else => b = false,
@@ -191,17 +219,16 @@ pub fn isDigitStr(str: []const u8) bool {
     return b;
 }
 
+
+
 /// is String isDecimal
 pub fn isDecimalStr(str: []const u8) bool {
-    var iter = iteratStr.iterator(str);
-    defer iter.deinit();
-    var b: bool = true;
     var idx: usize = 0;
     var p: bool = false; // dot
-    while (iter.next()) |ch| : (idx += 1) {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    var b: bool = true;
+    const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| : (idx += 1) {
         switch (x) {
             '0'...'9' => continue,
 
@@ -228,13 +255,10 @@ pub fn isDecimalStr(str: []const u8) bool {
 
 /// is String isDigit
 pub fn isSignedStr(str: []const u8) bool {
-    var iter = iteratStr.iterator(std.mem.trim(u8, str, " "));
-    defer iter.deinit();
-    var b: bool = false;
-    while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    var b: bool = true;
+    const view = std.unicode.Utf8View.init(std.mem.trim(u8, str, " ")) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| {   
         switch (x) {
             '-' => b = true,
 
@@ -250,13 +274,12 @@ pub fn isSignedStr(str: []const u8) bool {
 /// is String isLetter
 /// testing caracter Keyboard 103
 pub fn isLetterStr(str: []const u8) bool {
-    var iter = iteratStr.iterator(str);
-    defer iter.deinit();
     var b: bool = true;
-    while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| {
+
+        
         switch (x) {
             '0'...'9' => b = false,
             '&' => b = false,
@@ -342,13 +365,10 @@ pub fn isLetterStr(str: []const u8) bool {
 // testing caracter Keyboard 103
 // force omit ; csv
 pub fn isSpecialStr(str: []const u8) bool {
-    var iter = iteratStr.iterator(str);
-    defer iter.deinit();
     var b: bool = true;
-    while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| {
         switch (x) {
             '&' => continue,
             '¹' => continue,
@@ -399,13 +419,11 @@ pub fn isSpecialStr(str: []const u8) bool {
 // is String Punctuation
 // force omit ' ; csv
 pub fn isPunct(str: []const u8) bool {
-    var iter = iteratStr.iterator(str);
-    defer iter.deinit();
     var b: bool = true;
-    while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| {
+
         switch (x) {
             '.' => continue,
             ':' => continue,
@@ -430,13 +448,10 @@ pub fn isPunct(str: []const u8) bool {
 
 // is String omit char
 pub fn isCarOmit(str: []const u8) bool {
-    var iter = iteratStr.iterator(str);
-    defer iter.deinit();
     var b: bool = true;
-    while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+    const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |x| {
         switch (x) {
             ';' => continue,
             '~' => continue,
@@ -459,40 +474,41 @@ pub fn isPassword(str: []const u8) bool {
     defer iter.deinit();
     var b: bool = true;
     while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
-        switch (x) {
-            '!' => continue,
-            '#' => continue,
-            '$' => continue,
-            '%' => continue,
-            '&' => continue,
-            '(' => continue,
-            ')' => continue,
-            '*' => continue,
-            '+' => continue,
-            '-' => continue,
-            '.' => continue,
-            ':' => continue,
-            '<' => continue,
-            '=' => continue,
-            '>' => continue,
-            '?' => continue,
-            '@' => continue,
-            '[' => continue,
-            ']' => continue,
-            '^' => continue,
-            '{' => continue,
-            '}' => continue,
+    const view = std.unicode.Utf8View.init(ch) catch |err| {@panic(@errorName(err)); };
+    var iter2 = view.iterator();
+        while (iter2.nextCodepoint()) |x| {
+            switch (x) {
+                '!' => continue,
+                '#' => continue,
+                '$' => continue,
+                '%' => continue,
+                '&' => continue,
+                '(' => continue,
+                ')' => continue,
+                '*' => continue,
+                '+' => continue,
+                '-' => continue,
+                '.' => continue,
+                ':' => continue,
+                '<' => continue,
+                '=' => continue,
+                '>' => continue,
+                '?' => continue,
+                '@' => continue,
+                '[' => continue,
+                ']' => continue,
+                '^' => continue,
+                '{' => continue,
+                '}' => continue,
 
-            else => {
-                if (isLetterStr(ch)) continue;
-                if (isDigitStr(ch)) continue;
-                b = false;
-            },
+                else => {
+                    if (isLetterStr(ch)) continue;
+                    if (isDigitStr(ch)) continue;
+                    b = false;
+                },
+            }
         }
-    }
+    }    
     return b;
 }
 
@@ -503,40 +519,41 @@ pub fn isMailStr(str: []const u8) bool {
     defer iter.deinit();
     var b: bool = true;
     while (iter.next()) |ch| {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+        const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+        var iter2 = view.iterator();
+        while (iter2.nextCodepoint()) |x| {
 
-        switch (x) {
-            '+' => continue,
-            '-' => continue,
-            '_' => continue,
-            '.' => continue,
-            '@' => continue,
-            '!' => continue,
-            '#' => continue,
-            '$' => continue,
-            '%' => continue,
-            '&' => continue,
-            '*' => continue,
-            '/' => continue,
-            '=' => continue,
-            '?' => continue,
-             39 => continue,
-            '`' => continue,
-            '{' => continue,
-            '}' => continue,
-            '|' => continue,
-            '~' => continue,
-            '^' => continue,
-            else => {
-                if (isLetterStr(ch)) continue;
-                if (isDigitStr(ch)) continue;
-                if (x >= 191 and x <= 255) return false;
-                b = false;
-            },
+            switch (x) {
+                '+' => continue,
+                '-' => continue,
+                '_' => continue,
+                '.' => continue,
+                '@' => continue,
+                '!' => continue,
+                '#' => continue,
+                '$' => continue,
+                '%' => continue,
+                '&' => continue,
+                '*' => continue,
+                '/' => continue,
+                '=' => continue,
+                '?' => continue,
+                 39 => continue,
+                '`' => continue,
+                '{' => continue,
+                '}' => continue,
+                '|' => continue,
+                '~' => continue,
+                '^' => continue,
+                else => {
+                    if (isLetterStr(ch)) continue;
+                    if (isDigitStr(ch)) continue;
+                    if (x >= 191 and x <= 255) return false;
+                    b = false;
+                },
+            }
         }
-    }
+    }    
     return b;
 }
 
@@ -557,9 +574,10 @@ pub fn upperStr(str: []const u8) []const u8 {
     var car :[]const u8 = undefined;
     var r : u21 = 0 ;
     while (iter.next()) |ch | {
-        const x = utf.utf8Decode(ch) catch |err| {
-            @panic(@errorName(err));
-        };
+        const view = std.unicode.Utf8View.init(str) catch |err| {@panic(@errorName(err)); };
+        var iter2 = view.iterator();
+        var x : u21 = undefined;
+        while (iter2.nextCodepoint()) |u| { x = u ;}
         r = 0 ;
         if ( x >= 97 and x <= 122 )  r = x - 32;
         if ( x >= 224 and x <= 255 )  r = x - 32;
@@ -676,19 +694,18 @@ pub fn removeListStr(self: *std.ArrayList([]const u8), i: usize) void {
 pub fn addListStr(self: *std.ArrayList([]const u8), text: []const u8) void {
     var iter = iteratStr.iterator(text);
     defer iter.deinit();
-
     while (iter.next()) |ch| {
-        self.append(ch) catch |err| {
-            @panic(@errorName(err));
-        };
-    }
-}
+        self.append(ch) catch |err| { @panic(@errorName(err)); };
+     }
+ }
 
 /// ArrayList to String
 pub fn listToStr(self: std.ArrayList([]const u8)) []const u8 {
     var result: []const u8 = "";
-    for (self.items) |ch| {
-        result = concatStr(result, ch);
+    var idx : usize = 0;
+    for (self.items) |_| {
+        result = concatStr(result,self.items[idx]);
+        idx += 1;
     }
     return result;
 }
@@ -723,4 +740,3 @@ pub fn cboolToBool(v: []const u8) bool {
 pub fn cboolToStr(v: []const u8) []const u8 {
     return if (std.mem.eql(u8, v, CTRUE)) "1" else "0";
 }
-

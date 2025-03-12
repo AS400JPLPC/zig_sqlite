@@ -2523,7 +2523,7 @@ pub const    fld = struct {
         }
         else {
                 utl.addListStr(&e_FIELD    , f.text);
-            var i:usize = 0 ;
+                var i:usize = 0 ;
             while (i < (f.nbrcar - utl.nbrCharStr(f.text))) : ( i += 1) {
                 e_FIELD.append(" ") catch |err| { @panic(@errorName(err));};
             }
@@ -2648,7 +2648,6 @@ pub const    fld = struct {
 
         const allocator = std.heap.page_allocator;
         e_FIELD = std.ArrayList([] const u8).init(allocator);
-        e_FIELD.clearAndFree();
         defer e_FIELD.deinit();
         
         e_switch = vfld.zwitch;
@@ -2663,6 +2662,7 @@ pub const    fld = struct {
         // prepare the switch edition
         initData(vfld);
 
+       
         var Fkey : term.Keyboard = undefined ;
         var boucle : bool= true ;
 
@@ -2670,13 +2670,11 @@ pub const    fld = struct {
 
         term.onMouse();
 
-
         //===========================
         // boucle saisie
         //===========================
         while( boucle == true) {
-            
-
+          
             term.gotoXY(e_posx ,e_posy);
             switch(e_reftyp) {
                 .PASSWORD =>    term.writeStyled(password(e_FIELD),AtrIO) ,
@@ -3006,14 +3004,13 @@ pub const    fld = struct {
                                         e_curs    += 1;
                                         if (e_count == e_nbrcar) {
                                             e_count -= 1;
-                                            e_curs    -= 1;
+                                            e_curs  -= 1;
                                         }
                                     }
                                 },
                                 .UDECIMAL => {
                                     if (e_count < e_nbrcar and utl.isDigitStr(Fkey.Char) or 
-                                        (std.mem.eql(u8, Fkey.Char, ".") and e_count > 1) or
-                                        !std.mem.eql(u8, Fkey.Char, "-") and ! std.mem.eql(u8, Fkey.Char, "+") ) {
+                                        (std.mem.eql(u8, Fkey.Char, ".") and e_count > 1) ){
 
                                         if (vfld.scal == 0 and std.mem.eql(u8, Fkey.Char, ".") ) continue ;
                                         
@@ -3031,7 +3028,7 @@ pub const    fld = struct {
                                     }
                                 },
                                 .DECIMAL => {
-                                    if (e_count < e_nbrcar and utl.isDigitStr(Fkey.Char) and e_count > 0 or 
+                                    if (e_count < e_nbrcar and utl.isDecimalStr(Fkey.Char) and e_count > 0 or 
                                         (std.mem.eql(u8, Fkey.Char, ".") and e_count > 1) or
                                         (std.mem.eql(u8, Fkey.Char, "-") and e_count == 0) or
                                         (std.mem.eql(u8, Fkey.Char, "+") and e_count == 0)) {
@@ -3728,7 +3725,6 @@ pub const    pnl = struct {
                     fld.displayField(vpnl,vpnl.field.items[nField ]);
 
                     fld_key = fld.ioField(vpnl,vpnl.field.items[nField ]);
-
                     fld.printField(vpnl,vpnl.field.items[nField ]);
                     fld.displayField(vpnl,vpnl.field.items[nField ]);
                 

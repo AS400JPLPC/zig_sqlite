@@ -1,6 +1,8 @@
 # zig-sqlite
 
-zig 0.14.dev
+zig 0.14.0  
+  
+**The project is under construction**
 
 I thank "[nDimensional](https://github.com/nDimensional/zig-sqlite)"
 it is on this basis that I undertook to work, it remains simple, it is not a real duplication, because I updated so that it works from zig 0.14.dev.
@@ -161,5 +163,8 @@ example delivery date null = delivery not processed<BR/>
 → 2025-01-07 01:00 update Implementation of extended procedures of the zig "libsql" lib while respecting the structure of SQLITE3 <BR/>
 The Date function is under study.<BR/>.
 <BR/>
+→ 2025-03-10 15:00 Start of lib usage viability (TEXT DECIMAL DATE)<BR/>
+<BR/>
 
+→ 2025-03-12 06:40   unicode.Decode deprecated change Utf8View <BR/>
 

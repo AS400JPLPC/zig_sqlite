@@ -1,5 +1,6 @@
 	///-----------------------
 	/// export library
+	/// zig 0.12.0 dev
 	///-----------------------
 
 pub const cursed	= @import("cursed");
@@ -17,12 +18,8 @@ pub const zmmap		= @import("zmmap");
 pub const crypto	= @import("crypto");
 
 
-
-
 pub const logger	= @import("logger");
 
 pub const logcons	= @import("logcons");
 
 pub const logsrc	= @import("logsrc");
-
-
