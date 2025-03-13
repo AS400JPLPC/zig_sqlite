@@ -28,7 +28,7 @@ pub const contact = struct {
   ok        : bool,
   
 
-  // defined structure and set ""
+   // defined structure and set ""
     pub fn initRecord() contact {
 
         
@@ -87,10 +87,9 @@ stdout.writeAll("\x1b[3J") catch {};
 
 
 
-var client  = contact.initRecord();
+    var client  = contact.initRecord();
 
     pause("start");
-
     client.name.setZfld("AS400JPLPC");
     client.prenom.setZfld("Jean-Pierre");
     client.rue1.setZfld(" 01 rue du sud-ouest");
@@ -99,28 +98,36 @@ var client  = contact.initRecord();
     client.base.setDcml("126.12");
     client.nbritem.setDcml("12345");
     client.taxe.setDcml("1.25");
+
     
-    
-    pause("setp-1   INIT value"); 
+    const db = try sql3.open("sqlite", "db.zoned");
+    defer db.close();
 
-    var xx = client.name.string();
-    pause(xx);
+// To work in extended digital (DCML) put the TEXT fields
+    if (! try db.istable("Zoned")) {
 
-
-    client.ttc.rate(client.base,client.nbritem,client.taxe);
-
-    xx = client.ttc.string();
-
-    client.htx.multTo(client.base,client.nbritem);
-    pause(xx);
-
- 
-    // only test
-    client.date.setZfld("2025-01-07");
-
+        pause("isTable");
+        try db.exec(
+        \\ CREATE TABLE "Zoned" (
+    	\\ "id"      INTEGER,
+    	\\ "name"    TEXT NOT NULL,
+    	\\ "prenom"  TEXT NOT NULL,
+    	\\ "rue1"    TEXT NOT NULL,
+    	\\ "rue2"    TEXT,
+    	\\ "ville"   TEXT NOT NULL,
+    	\\ "pays"    TEXT NOT NULL,
+    	\\ "base"    TEXT,
+    	\\ "taxe"    TEXT,
+    	\\ "htx"     TEXT,
+    	\\ "ttc"     TEXT,
+    	\\ "nbritem" TEXT,
+    	\\ "date"    TEXT,
+    	\\ "ok" BOOL CHECK("ok" IN (0, 1)),
+    	\\ PRIMARY KEY("id" AUTOINCREMENT))
+        , .{});
+    }
 
     const clientSql = struct {
-
         id:?i32,// autoincrement
         name: sql3.Text,
         prenom: sql3.Text,
@@ -135,35 +142,9 @@ var client  = contact.initRecord();
         nbritem: sql3.Numeric,
         date: sql3.Date,
         ok: sql3.Bool
-        };
-    
-    const db = try sql3.open("sqlite", "zoned.db");
-    defer db.close();
+    };
 
-// To work in extended digital (DCML) put the TEXT fields
-    if (! try db.istable("Zoned")) {
-        try db.exec(
-        \\ CREATE TABLE "Zoned" (
-    	\\ "id"    INTEGER,
-    	\\ "name"    TEXT NOT NULL,
-    	\\ "prenom"  TEXT NOT NULL,
-    	\\ "rue1"    TEXT NOT NULL,
-    	\\ "rue2"    TEXT,
-    	\\ "ville"   TEXT NOT NULL,
-    	\\ "pays"    TEXT NOT NULL,
-    	\\ "base"    TEXT,
-    	\\ "taxe"    TEXT,
-    	\\ "htx"     TEXT,
-    	\\ "ttc"     TEXT,
-    	\\ "nbritem" TEXT,
-    	\\ "date"    TEXT,
-    	\\ "ok" BOOL CHECK("ok" IN (0, 1)),
-    	\\ PRIMARY KEY("id" AUTOINCREMENT);
-        , .{});
-    }
-
-
-    if (try db.istable("Zoned")) {
+    if (!try db.istable("Zoned")) {
 
         // autoincrement
         // We describe all the fields except the one that increments.
@@ -173,10 +154,10 @@ var client  = contact.initRecord();
             void,
         \\INSERT INTO Zoned (id, name,prenom,rue1,rue2,ville,pays,base,taxe,htx,ttc,nbritem,date,ok)
         \\VALUES(:id, :name, :prenom, :rue1, :rue2, :ville, :pays, :base, :taxe, :htx, :ttc, :nbritem, :date, :ok)
-        );
-        defer insert.finalize();
-// pause("prepare");
-        
+        ,);
+        defer insert.finalize();   
+ 
+       
         try insert.exec(.{
             .id = null,
             .name = sql3.text(client.name.string()),
@@ -193,21 +174,27 @@ var client  = contact.initRecord();
             .date = sql3.date(client.date.string()),
             .ok = sql3.boolean(client.ok),
              });
+    }
 
- 
-}
-   // // UPDATE
+
+
+
+    client.ttc.setZeros();
+    client.ok = false;
+   // UPDATE  where name ="AS400JPLPC"
     {
         // for test value ttc big decimal check finance Force quoted values for DCML  
         const allocator = std.heap.page_allocator;
         const sqlUpdate : []const u8 = std.fmt.allocPrint(allocator,
-            "UPDATE Zoned SET (name,ttc,ok)=('{s}', \"{s}\",{d}) WHERE id='{d}'",
-                .{client.name.string(),client.ttc.string(),sql3.cbool(client.ok),25,})
+            "UPDATE Zoned SET (ttc,ok)=(\"{s}\",{d}) WHERE name='{s}'",
+                .{client.ttc.string(),sql3.cbool(client.ok),client.name.string(),})
                 catch {@panic("init Update invalide");};
         defer allocator.free(sqlUpdate);
         pause(sqlUpdate);
         try db.exec(sqlUpdate,.{});
     }
+
+
 
     // Test SELECT
     {
@@ -236,30 +223,29 @@ var client  = contact.initRecord();
                     rcd.name.data, rcd.prenom.data, rcd.rue1.data, rcd.rue2.data, rcd.ville.data, rcd.pays.data,
                     rcd.base.data, rcd.taxe.data, rcd.htx.data, rcd.ttc.data, rcd.nbritem.data,
                     rcd.date.data , rcd.ok.data} );
-            client.id = rcd.id orelse 0;
-            client.ok = false;
-            
         }
 
 
     }
 
 
-    // // UPDATE
+    client.ttc.rate(client.base,client.nbritem,client.taxe);
+    client.ok = true;
+    // UPDATEd id = 1
     {
         // for test value ttc big decimal check finance Force quoted values for DCML  
    client.ttc.setDcml("912345678901234567890123456789.0123");
         const allocator = std.heap.page_allocator;
         const sqlUpdate : []const u8 = std.fmt.allocPrint(allocator,
             "UPDATE Zoned SET (name,ttc,ok)=('{s}', \"{s}\",{d}) WHERE id='{d}'",
-                .{"COUCOU",client.ttc.string(),sql3.cbool(client.ok),25,})
+                .{"COUCOU",client.ttc.string(),sql3.cbool(client.ok),1,})
                 catch {@panic("init Update invalide");};
         defer allocator.free(sqlUpdate);
         pause(sqlUpdate);
         try db.exec(sqlUpdate,.{});
     }
-    
-    // Test SELECT
+
+   // Test SELECT
     {
 
          const select = try db.prepare(
@@ -270,7 +256,7 @@ var client  = contact.initRecord();
         defer select.finalize();
        // Iterate again, full
 
-        try select.bind(.{.key = 25});
+        try select.bind(.{.key = 1});
         defer select.reset();
 
         while (try select.step()) |rcd| {
@@ -291,8 +277,11 @@ var client  = contact.initRecord();
 
 
     }
-     
-    zfld.deinitZfld();
+
+
+
+
+ 
     dcml.deinitDcml();
     pause("stop");
 }

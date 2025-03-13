@@ -5,12 +5,6 @@ pub fn build(b: *std.Build) void {
 	// between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
 	const target   = b.standardTargetOptions(.{});
 	const optimize = b.standardOptimizeOption(.{});
- 
-    // zig-src            source projet
-    // zig-src/deps       curs/ form / outils ....
-    // src_c              source c/c++
-
-
 
     // Definition of dependencies
 

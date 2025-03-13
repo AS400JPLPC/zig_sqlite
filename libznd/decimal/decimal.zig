@@ -116,10 +116,12 @@ pub const DCMLFX = struct {
 	// normalize this conforms to the attributes 
 	fn normalize( dst : *DCMLFX, r: f128) [] u8 {
 		var sx : []  u8 = "";
-		const sign = if(r > 0) "+" else "-";
-    	const val  = if(r > 0) r else r * -1 ;
-    	
-    	work = std.fmt.allocPrint(allocDcml,"{c}{d:}",.{sign,val}) catch unreachable;
+		var sign :u8 = ' ';
+		if ( r > 0 ) sign = '+';
+		if ( r < 0 ) sign = '-';
+		const val  = if(r > 0 or r == 0 ) r else r * -1 ;
+
+     	work = std.fmt.allocPrint(allocDcml,"{c}{d:}",.{sign,val}) catch unreachable;
 		defer allocDcml.free(work);
 
 		var nx: isize = 0 ;
@@ -420,7 +422,7 @@ pub const DCMLFX = struct {
                     catch unreachable);
         }
 
-       work = normalize(dst , dst.val );
+        work = normalize(dst , dst.val );
 		defer allocDcml.free(work);
 
 		var iterA = iterator(work);
@@ -481,10 +483,9 @@ pub const DCMLFX = struct {
 		}
 		r = @trunc(r);
 
-
-		if ( dst.val > 0 ) 
-		    PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'+',e,r}) catch unreachable
-		else  PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'-',e,r}) catch unreachable;
+		if ( dst.val == 0 ) PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{' ',e,r}) catch unreachable;
+		if ( dst.val > 0 )  PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'+',e,r}) catch unreachable;
+		if ( dst.val < 0 )  PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'-',e,r}) catch unreachable;
 		return PRINT_CODE;
 	}
 
@@ -494,9 +495,9 @@ pub const DCMLFX = struct {
 		var PRINT_CODE: []const u8 = undefined;
 		const v : f128 = if(dst.val > 0) dst.val else dst.val  * -1;
 		const e = @trunc(v);
-		if ( dst.val > 0 ) 
-		    PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'+',e,}) catch unreachable
-		else PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'-',e}) catch unreachable;
+		if ( dst.val == 0 ) PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{' ',e}) catch unreachable;
+		if ( dst.val > 0 )  PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'+',e}) catch unreachable;
+		if ( dst.val < 0 )  PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'-',e}) catch unreachable;
 		    return PRINT_CODE;
 	}
 

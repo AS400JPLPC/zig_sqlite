@@ -168,3 +168,6 @@ The Date function is under study.<BR/>.
 
 → 2025-03-12 06:40   unicode.Decode deprecated change Utf8View <BR/>
 
+
+→ 2025-03-13 11:53   Test viability of Decimal, Text, Date modules with sql, test if SQLite is in phase with sqlite.zig module<BR/>
+
