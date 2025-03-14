@@ -5,8 +5,13 @@
 const std = @import("std");
 const zfld = @import("zfield").ZFIELD;
 const dcml = @import("decimal").DCMLFX;
+pub const dte = @import("datetime").DATE;
+pub const dtm = @import("datetime").DTIME;
+pub const Idm = @import("datetime").DATE.Idiom;
+pub const Tmz = @import("timezones");
 const sql3 = @import("sqlite");
 
+const allocSQL = std.heap.page_allocator;
 
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
@@ -23,7 +28,7 @@ pub const contact = struct {
   taxe      : dcml ,
   htx       : dcml ,
   ttc       : dcml ,
-  date      : zfld ,
+  date      : dte  ,
   nbritem   : dcml ,
   ok        : bool,
   
@@ -45,7 +50,7 @@ pub const contact = struct {
             .htx    = dcml.init(11,2) ,
             .ttc    = dcml.init(30,4)  ,
             .nbritem  = dcml.init(5,0) ,
-            .date   = zfld.init(10) ,
+            .date   = dte.nowDate(Tmz.Europe.Paris),
             .ok = true,
         };
         
@@ -65,7 +70,7 @@ pub const contact = struct {
         r.htx.deinit();
         r.ttc.deinit();
         r.nbritem.deinit();
-        r.date.deinit();
+        r.date.dateOff();
         r.ok = false;
     }
 
@@ -100,7 +105,7 @@ stdout.writeAll("\x1b[3J") catch {};
     client.taxe.setDcml("1.25");
 
     
-    const db = try sql3.open("sqlite", "db.zoned");
+    const db = try sql3.open("sqlite", "db.REPzoned");
     defer db.close();
 
 // To work in extended digital (DCML) put the TEXT fields
@@ -116,12 +121,12 @@ stdout.writeAll("\x1b[3J") catch {};
     	\\ "rue2"    TEXT,
     	\\ "ville"   TEXT NOT NULL,
     	\\ "pays"    TEXT NOT NULL,
-    	\\ "base"    TEXT,
-    	\\ "taxe"    TEXT,
-    	\\ "htx"     TEXT,
-    	\\ "ttc"     TEXT,
-    	\\ "nbritem" TEXT,
-    	\\ "date"    TEXT,
+    	\\ "base"    NUMERIC,
+    	\\ "taxe"    NUMERIC,
+    	\\ "htx"     NUMERIC,
+    	\\ "ttc"     NUMERIC,
+    	\\ "nbritem" NUMERIC,
+    	\\ "date"    DATE,
     	\\ "ok" BOOL CHECK("ok" IN (0, 1)),
     	\\ PRIMARY KEY("id" AUTOINCREMENT))
         , .{});
@@ -144,7 +149,7 @@ stdout.writeAll("\x1b[3J") catch {};
         ok: sql3.Bool
     };
 
-    if (!try db.istable("Zoned")) {
+    if (try db.istable("Zoned")) {
 
         // autoincrement
         // We describe all the fields except the one that increments.
@@ -184,12 +189,11 @@ stdout.writeAll("\x1b[3J") catch {};
    // UPDATE  where name ="AS400JPLPC"
     {
         // for test value ttc big decimal check finance Force quoted values for DCML  
-        const allocator = std.heap.page_allocator;
-        const sqlUpdate : []const u8 = std.fmt.allocPrint(allocator,
+        const sqlUpdate : []const u8 = std.fmt.allocPrint(allocSQL,
             "UPDATE Zoned SET (ttc,ok)=(\"{s}\",{d}) WHERE name='{s}'",
                 .{client.ttc.string(),sql3.cbool(client.ok),client.name.string(),})
                 catch {@panic("init Update invalide");};
-        defer allocator.free(sqlUpdate);
+        defer allocSQL.free(sqlUpdate);
         pause(sqlUpdate);
         try db.exec(sqlUpdate,.{});
     }
@@ -231,16 +235,16 @@ stdout.writeAll("\x1b[3J") catch {};
 
     client.ttc.rate(client.base,client.nbritem,client.taxe);
     client.ok = true;
+    client.date = dte.create(2025, 3, 1) catch unreachable;
     // UPDATEd id = 1
     {
         // for test value ttc big decimal check finance Force quoted values for DCML  
    client.ttc.setDcml("912345678901234567890123456789.0123");
-        const allocator = std.heap.page_allocator;
-        const sqlUpdate : []const u8 = std.fmt.allocPrint(allocator,
-            "UPDATE Zoned SET (name,ttc,ok)=('{s}', \"{s}\",{d}) WHERE id='{d}'",
-                .{"COUCOU",client.ttc.string(),sql3.cbool(client.ok),1,})
+        const sqlUpdate : []const u8 = std.fmt.allocPrint(allocSQL,
+            "UPDATE Zoned SET (name,ttc,date,ok)=('{s}', \"{s}\", \"{s}\", {d}) WHERE id='{d}'",
+                .{"COUCOU",client.ttc.string(),client.date.string(),sql3.cbool(client.ok),1,})
                 catch {@panic("init Update invalide");};
-        defer allocator.free(sqlUpdate);
+        defer allocSQL.free(sqlUpdate);
         pause(sqlUpdate);
         try db.exec(sqlUpdate,.{});
     }
@@ -281,8 +285,9 @@ stdout.writeAll("\x1b[3J") catch {};
 
 
 
- 
+    zfld.deinitZfld();
     dcml.deinitDcml();
+    dte.deinitAlloc();
     pause("stop");
 }
 

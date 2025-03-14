@@ -171,3 +171,6 @@ The Date function is under study.<BR/>.
 
 → 2025-03-13 11:53   Test viability of Decimal, Text, Date modules with sql, test if SQLite is in phase with sqlite.zig module<BR/>
 
+
+→ 2025-03-14 16:25   Test with SQL of “DEF” structure with DECIMAL DATE, this forced me to harmonize and simplify, “date” with “string” and “decimal”.<BR/>
+
