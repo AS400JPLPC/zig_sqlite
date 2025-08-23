@@ -13,8 +13,28 @@ const sql3 = @import("sqlite");
 
 const allocSQL = std.heap.page_allocator;
 
-const stdout = std.io.getStdOut().writer();
-const stdin = std.io.getStdIn().reader();
+
+//============================================================================================
+var out = std.fs.File.stdout().writerStreaming(&.{});
+pub inline fn Print( comptime format: []const u8, args: anytype) void {
+    out.interface.print(format, args) catch return;
+}
+pub inline fn WriteAll( args: anytype) void {
+    out.interface.writeAll(args) catch return;
+}
+
+
+fn Pause(msg : [] const u8 ) void{
+
+    Print("\nPause  {s}\r\n",.{msg});
+    var stdin = std.fs.File.stdin();
+    var buf: [16]u8 =  [_]u8{0} ** 16;
+    var c  : usize = 0;
+    while (c == 0) {
+        c = stdin.read(&buf) catch unreachable;
+   }
+}   
+//============================================================================================
 
 pub const contact = struct {
   id        : i32,
@@ -87,14 +107,14 @@ pub const contact = struct {
 // }
     
 pub fn main() !void {
-stdout.writeAll("\x1b[2J") catch {};
-stdout.writeAll("\x1b[3J") catch {};
+WriteAll("\x1b[2J");
+WriteAll("\x1b[3J");
 
 
 
     var client  = contact.initRecord();
 
-    pause("start");
+    Pause("start");
     client.name.setZfld("AS400JPLPC");
     client.prenom.setZfld("Jean-Pierre");
     client.rue1.setZfld(" 01 rue du sud-ouest");
@@ -105,13 +125,13 @@ stdout.writeAll("\x1b[3J") catch {};
     client.taxe.setDcml("1.25");
 
     
-    const db = try sql3.open("sqlite", "db.REPzoned");
+    const db = try sql3.open("sqlite", "db.REPzoned", sql3.Mode.ReadWrite);
     defer db.close();
 
 // To work in extended digital (DCML) put the TEXT fields
     if (! try db.istable("Zoned")) {
 
-        pause("isTable");
+        Pause("isTable");
         try db.exec(
         \\ CREATE TABLE "Zoned" (
     	\\ "id"      INTEGER,
@@ -194,7 +214,7 @@ stdout.writeAll("\x1b[3J") catch {};
                 .{client.ttc.string(),sql3.cbool(client.ok),client.name.string(),})
                 catch {@panic("init Update invalide");};
         defer allocSQL.free(sqlUpdate);
-        pause(sqlUpdate);
+        Pause(sqlUpdate);
         try db.exec(sqlUpdate,.{});
     }
 
@@ -227,6 +247,8 @@ stdout.writeAll("\x1b[3J") catch {};
                     rcd.name.data, rcd.prenom.data, rcd.rue1.data, rcd.rue2.data, rcd.ville.data, rcd.pays.data,
                     rcd.base.data, rcd.taxe.data, rcd.htx.data, rcd.ttc.data, rcd.nbritem.data,
                     rcd.date.data , rcd.ok.data} );
+
+             std.log.info("--------------------------",.{});       
         }
 
 
@@ -235,7 +257,8 @@ stdout.writeAll("\x1b[3J") catch {};
 
     client.ttc.rate(client.base,client.nbritem,client.taxe);
     client.ok = true;
-    client.date = dte.create(2025, 3, 1) catch unreachable;
+    client.date.dateOff();
+
     // UPDATEd id = 1
     {
         // for test value ttc big decimal check finance Force quoted values for DCML  
@@ -245,8 +268,10 @@ stdout.writeAll("\x1b[3J") catch {};
                 .{"COUCOU",client.ttc.string(),client.date.string(),sql3.cbool(client.ok),1,})
                 catch {@panic("init Update invalide");};
         defer allocSQL.free(sqlUpdate);
-        pause(sqlUpdate);
+        Pause(sqlUpdate);
         try db.exec(sqlUpdate,.{});
+
+        std.log.info("--------------------------",.{});
     }
 
    // Test SELECT
@@ -278,8 +303,7 @@ stdout.writeAll("\x1b[3J") catch {};
                     rcd.date.data , rcd.ok.data} );
              
         }
-
-
+        std.log.info("--------------------------",.{}); 
     }
 
 
@@ -287,15 +311,7 @@ stdout.writeAll("\x1b[3J") catch {};
 
     zfld.deinitZfld();
     dcml.deinitDcml();
-    dte.deinitAlloc();
-    pause("stop");
-}
-
-
-fn pause(text : [] const u8) void {
-    std.debug.print("{s}\n",.{text});
-   	var buf : [3]u8  =	[_]u8{0} ** 3;
-	_= stdin.readUntilDelimiterOrEof(buf[0..], '\n') catch unreachable;
-
+    dte.deinitDate();
+    Pause("stop");
 }
 

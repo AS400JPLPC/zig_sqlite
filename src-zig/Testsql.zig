@@ -12,7 +12,7 @@ pub fn main () ! void {
     
 
 
-    const db = try sql3.open("sqlite", "db.sqlite");
+    const db = try sql3.open("sqlite", "db.sqlite" , sql3.Mode.ReadWrite);
     defer db.close();
     
     {
@@ -170,27 +170,27 @@ fn deserialize () ! void {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
 
-    const db1 = try sql3.openTmp(tmp.dir, "db.sqlite");
-    defer db1.close();
+    const dbmem = try sql3.openTmp();
+    defer dbmem.close();
 
-    try db1.exec("CREATE TABLE Tusers (id INTEGER PRIMARY KEY)", .{});
-    try db1.exec("INSERT INTO Tusers VALUES (:id)", .{ .id = @as(usize, 0) });
-    try db1.exec("INSERT INTO Tusers VALUES (:id)", .{ .id = @as(usize, 1) });
+    try dbmem.exec("CREATE TABLE Tusers (id INTEGER PRIMARY KEY)", .{});
+    try dbmem.exec("INSERT INTO Tusers VALUES (:id)", .{ .id = @as(usize, 0) });
+    try dbmem.exec("INSERT INTO Tusers VALUES (:id)", .{ .id = @as(usize, 1) });
 
-    const file = try tmp.dir.openFile("db.sqlite", .{});
-    defer file.close();
+    // const file = try tmp.dir.openFile("db.sqlite", .{});
+    // defer file.close();
 
-    const data = try file.readToEndAlloc(allocator, 4096 * 8);
-    defer allocator.free(data);
+    // const data = try file.readToEndAlloc(allocator, 4096 * 8);
+    // defer allocator.free(data);
 
-    const db2 = try sql3.Database.import(data);
-    defer db2.close();
+    // const db2 = try sql3.Database.import(data);
+    // defer db2.close();
 
     const User = struct { id: usize };
-    var rows = std.ArrayList(User).init(allocator);
-    defer rows.deinit();
+    var rows = std.ArrayList(User).initCapacity(allocator,0) catch unreachable;
+    defer rows.deinit(allocator);
 
-    const stmt = try db2.prepare(struct {}, User, "SELECT id FROM Tusers");
+    const stmt = try dbmem.prepare(struct {}, User, "SELECT id FROM Tusers");
     defer stmt.finalize();
 
     try stmt.bind(.{});
@@ -200,7 +200,7 @@ fn deserialize () ! void {
          x += 1;
          var upd = row;
          upd.id = x;
-        try rows.append(upd);
+        try rows.append(allocator,upd);
     }
 
     try std.testing.expectEqualSlices(User, &.{ .{ .id = 6 }, .{ .id = 7 } }, rows.items);

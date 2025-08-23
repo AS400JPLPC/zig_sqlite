@@ -108,6 +108,9 @@ pub fn throw(code: c_int) Error!void {
     };
 }
 
+
+pub const Mode = enum { ReadWrite, ReadOnly};
+
 //=========================================================
 //=========================================================
 pub const Blob = struct { data: []const u8 };
@@ -160,7 +163,7 @@ pub fn isDbxist( vdir : []const u8, fn_file_name:[]const u8) bool {
     return true;
 }
 
-pub fn open(vdir : []const u8, name: []const u8) !Database {
+pub fn open(vdir : []const u8, name: []const u8, opt:Mode) !Database {
     const errDir = error{File_FolderNotFound, };
     const cDIR = std.fs.cwd().openDir(vdir,.{}) catch {@panic(@errorName(errDir.File_FolderNotFound));};
     
@@ -170,32 +173,27 @@ pub fn open(vdir : []const u8, name: []const u8) !Database {
 
     const path_file = try std.fs.path.joinZ(allocator, &.{ path_dir, name });
     defer allocator.free(path_file);
-
-    return try Database.open(.{ .path = path_file });
+    var crt : bool = false; 
+    if( isDbxist(vdir,name)) crt = true;
+    return try Database.open(.{ .path = path_file , .mode = opt, .create = crt} );
 }
 
 
-pub fn openTmp(tDir: std.fs.Dir, name: []const u8) !Database {
+pub fn openTmp() !Database {
     
-    const allocator = std.heap.c_allocator;
-    const path_dir = try tDir.realpathAlloc(allocator, ".");
-    defer allocator.free(path_dir);
-
-    const path_file = try std.fs.path.joinZ(allocator, &.{ path_dir, name });
-    defer allocator.free(path_file);
-
-    return try Database.open(.{ .path = path_file });
+    return try Database.open(.{ .path =":memory:"} );
 }
 //=========================================================
 //=========================================================
 
 pub const Database = struct {
-    pub const Mode = enum { ReadWrite, ReadOnly };
+    // pub const Mode = enum { ReadWrite, ReadOnly };
 
     pub const Options = struct {
         path: ?[*:0]const u8 = null,
-        mode: Mode = .ReadWrite,
+         mode: Mode = .ReadWrite,
         create: bool = true,
+
     };
 
     ptr: ?*c.sqlite3,

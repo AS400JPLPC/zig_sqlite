@@ -11,9 +11,29 @@ pub const dte = @import("datetime").DATE;
 pub const dtm = @import("datetime").DTIME;
 pub const tmz = @import("timezones");
 pub const idm = @import("datetime").DATE.Idiom;
-const stdout = std.io.getStdOut().writer();
-const stdin = std.io.getStdIn().reader();
-const allocSQL = std.heap.page_allocator;
+
+//============================================================================================
+
+var out = std.fs.File.stdout().writerStreaming(&.{});
+pub inline fn Print( comptime format: []const u8, args: anytype) void {
+    out.interface.print(format, args) catch return;
+}
+pub inline fn WriteAll( args: anytype) void {
+    out.interface.writeAll(args) catch return;
+}
+
+fn Pause(msg : [] const u8 ) void{
+
+    Print("\nPause  {s}\r\n",.{msg});
+    var stdin = std.fs.File.stdin();
+    var buf: [16]u8 =  [_]u8{0} ** 16;
+    var c  : usize = 0;
+    while (c == 0) {
+        c = stdin.read(&buf) catch unreachable;
+    }
+}
+
+//==========================================================================================const allocSQL = std.heap.page_allocator;
 pub const contact = struct {
   name      : zfld,
   prenom    : zfld,
@@ -70,14 +90,14 @@ pub const contact = struct {
 };
     
 pub fn main() !void {
-stdout.writeAll("\x1b[2J") catch {};
-stdout.writeAll("\x1b[3J") catch {};
+WriteAll("\x1b[2J");
+WriteAll("\x1b[3J");
 
 
 
 var friend  = contact.initRecord();
 
-    pause("start");
+    Pause("start");
 
     friend.name.setZfld("AS400JPLPC");
     friend.prenom.setZfld("Jean-Pierre");
@@ -89,10 +109,10 @@ var friend  = contact.initRecord();
     friend.taxe.setDcml("1.20");
     
     
-    pause("setp-1   INIT value"); 
+    Pause("setp-1   INIT value"); 
 
     var xx = friend.name.string();
-    pause(xx);
+    Pause(xx);
 
 
     friend.ttc.rate(friend.base,friend.nbritem,friend.taxe) ;
@@ -101,21 +121,21 @@ var friend  = contact.initRecord();
 
     friend.htx.multTo(friend.base,friend.nbritem) ;
     xx = friend.ttc.string();
-    pause(xx);
+    Pause(xx);
 
     xx = friend.dfacture.stringFR();
-    pause(xx);
+    Pause(xx);
 
     xx = friend.dfacture.dateExt(idm.fr);
-    pause(xx);
+    Pause(xx);
 
     //friend.deinitRecord();  //Test erreur
     xx = friend.dfacture.string();
-    pause(xx);
+    Pause(xx);
     
 
     xx = friend.dfacture.dateExt(idm.fr);
-    pause(xx);
+    Pause(xx);
 
     if (!friend.dfacture.status) std.debug.print("date de facture {}\n",.{null});
     zfld.deinitZfld();
@@ -125,20 +145,14 @@ var friend  = contact.initRecord();
     
     friend  = contact.initRecord();
     xx = friend.dfacture.stringFR();
-    pause(xx);
+    Pause(xx);
 
 
     
-    pause("stop");
+    Pause("stop");
 }
 
 
 
 
-fn pause(text : [] const u8) void {
-    std.debug.print("{s}\n",.{text});
-   	var buf : [3]u8  =	[_]u8{0} ** 3;
-	_= stdin.readUntilDelimiterOrEof(buf[0..], '\n') catch unreachable;
-
-}
 

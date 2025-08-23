@@ -1,6 +1,6 @@
 # zig-sqlite
 
-zig 0.14.0  
+zig 0.15.1  
   
 **The project is under construction**
 
@@ -67,7 +67,7 @@ const sql3 = @import("sqlite");
 
 {
     // in-memory database
-    const db = try sql3.open("sqlite", "db.sqlite");
+    const db = try sql3.open("sqlite", "db.sqlite" , sql3.Mode.ReadWrite );
     defer db.close();
 
 }
@@ -173,4 +173,8 @@ The Date function is under study.<BR/>.
 
 
 → 2025-03-14 16:25   Test with SQL of “DEF” structure with DECIMAL DATE, this forced me to harmonize and simplify, “date” with “string” and “decimal”.<BR/>
-
+<BR/>
+→ 2025-08-22 02:10  update zig 0.15.1  <BR/>
+→ 2025-08-22 02:10  add openTmp -> ":memory:"   <BR/>  
+→ 2025-08-22 02:10  add open -> add mode : Mode.ReadWrite / Mode.readOnly <BR/>
+<BR/>
