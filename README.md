@@ -135,6 +135,8 @@ pub const Numeric = struct { data: []const u8 };<BR/>
 pub const Date = struct { data: []const u8 };<BR/>
 pub const Bool = struct { data: bool};<BR/>
 
+
+
 ex: src-zig/sqlite.zig<BR/>
 
 
@@ -177,4 +179,7 @@ The Date function is under study.<BR/>.
 → 2025-08-22 02:10  update zig 0.15.1  <BR/>
 → 2025-08-22 02:10  add openTmp -> ":memory:"   <BR/>  
 → 2025-08-22 02:10  add open -> add mode : Mode.ReadWrite / Mode.readOnly <BR/>
+
+→ 2025-08-29 00:30  add fn zbool <BR/>
+
 <BR/>
