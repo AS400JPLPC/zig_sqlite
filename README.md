@@ -182,4 +182,9 @@ The Date function is under study.<BR/>.
 
 → 2025-08-29 00:30  add fn zbool <BR/>
 
+
+→ 2025-09-03 21:40  add fn pragma / jrnlog <BR/>
+
+→ 2025-09-03 21:40  Look in the “zig_prog” (github)  folder for real-world tests as examples.<BR/>
+
 <BR/>
