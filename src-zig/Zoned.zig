@@ -140,8 +140,8 @@ var friend  = contact.initRecord();
     if (!friend.dfacture.status) std.debug.print("date de facture {}\n",.{null});
     zfld.deinitZfld();
     dcml.deinitDcml();
-    dte.deinitAlloc();
-    dtm.deinitAlloc();
+    dte.deinitDate();
+    dtm.deinitDtime();
     
     friend  = contact.initRecord();
     xx = friend.dfacture.stringFR();

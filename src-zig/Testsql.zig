@@ -16,15 +16,15 @@ pub fn main () ! void {
     defer db.close();
     
     {
-         std.debug.print("name:{s} istable:{s}   {}\n", .{ "db.sqlite" ,"users",try db.istable("users")});
-         std.debug.print("name:{s} istable:{s}   {}\n", .{ "db.sqlite" ,"xxxxusers",try db.istable("xxxxusers")});
+         std.debug.print("name:{s} istable:{s}   {}\n", .{ "db.sqlite" ,"users", db.istable("users")});
+         std.debug.print("name:{s} istable:{s}   {}\n", .{ "db.sqlite" ,"xxxxusers", db.istable("xxxxusers")});
     }
 
     const User = struct { id: sql3.Text, age: ?i32, isok: i32 };
 
 
     // The BOOL specification is purely indicative, as SQLite will see it as an integer
-    if (! try db.istable("users") ) {
+    if (!  db.istable("users") ) {
         try db.exec(
             \\ CREATE TABLE users (
             \\ id TEXT NOT NULL UNIQUE,

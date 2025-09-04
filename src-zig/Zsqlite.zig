@@ -129,7 +129,7 @@ WriteAll("\x1b[3J");
     defer db.close();
 
 // To work in extended digital (DCML) put the TEXT fields
-    if (! try db.istable("Zoned")) {
+    if (! db.istable("Zoned")) {
 
         Pause("isTable");
         try db.exec(
@@ -169,7 +169,7 @@ WriteAll("\x1b[3J");
         ok: sql3.Bool
     };
 
-    if (try db.istable("Zoned")) {
+    if (db.istable("Zoned")) {
 
         // autoincrement
         // We describe all the fields except the one that increments.
