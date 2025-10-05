@@ -511,7 +511,7 @@ pub const DCMLFX = struct {
 	// It's not SQL-compliant, but it's handy for paper editions...
 	pub fn editCodeInt( dst: *DCMLFX, comptime  CODE_EDIT : []const u8 )  [] const u8 {
 		var PRINT_CODE: []const u8 = undefined;
-		const v : f128 = if(dst.val >= 0) dst.val else dst.val  * -1;
+		const v : f128 = if(dst.val > 0) dst.val else dst.val  * -1;
 		const e = @trunc(v);
 		if ( dst.val == 0) PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{' ',e}) catch unreachable;
 		if ( dst.val > 0 )  PRINT_CODE = std.fmt.allocPrint(allocDcml, CODE_EDIT,.{'+',e}) catch unreachable;
@@ -523,7 +523,7 @@ pub const DCMLFX = struct {
 	// It's not SQL-compliant, but it's handy for paper editions...
 	pub fn strUInt( dst: *DCMLFX )  [] const u8 {
 		var PRINT_CODE: []const u8 = undefined;
-		const v : f128 = if(dst.val >= 0) dst.val else dst.val  * -1;
+		const v : f128 = if(dst.val > 0) dst.val else dst.val  * -1;
 		const e = @trunc(v);
 		PRINT_CODE = std.fmt.allocPrint(allocDcml,"{d}",.{e}) catch unreachable;
 		return allocDcml.dupe(u8, PRINT_CODE) catch unreachable;
@@ -831,6 +831,18 @@ pub const DCMLFX = struct {
 		}
 	}
 
+
+	// recherche si value negative
+	pub fn isNegative(a: DCMLFX) bool {
+		if (a.entier == 0 and a.scale == 0) {
+			const s = @src();
+            @panic( std.fmt.allocPrint(allocDcml,
+            "\n\n\r file:{s} line:{d} column:{d} func:{s}({d}) out-of-service FIELD err:{}\n\r"
+            ,.{s.file, s.line, s.column,s.fn_name,a.val, Error.Failed_Number})
+            	catch unreachable);
+        }
+		if (a.val < 0 ) return true  else return false ;
+	}
 
 
 	pub const Expr = union(enum) {
