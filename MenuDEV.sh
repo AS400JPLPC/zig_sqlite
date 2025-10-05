@@ -56,10 +56,10 @@ printf '\e[8;'35';'80't'
 envCPP="1"
 envZIG="2"
 PROJECT="ZSQL"
-LIBPROJECT="/home/soleil/Zsql/"
-LIBTUI="/home/soleil/Zsql/libtui/"
-LIBZND="/home/soleil/Zsql/libznd/"
-LIBSQL="/home/soleil/Zsql/libsql/"
+LIBPROJECT=$HOME"/Zsql/"
+LIBTUI=$HOME"/Zsql/libtui/"
+LIBZND=$HOME"/Zsql/libznd/"
+LIBSQL=$HOME"/Zsql/libsql/"
 choix=""
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -107,64 +107,54 @@ do
 
 # APPTERM
 #        1)
-#            /home/soleil/.Terminal/dispatch.sh $envCPP $LIBPROJECT   "APPTERM"
+#            $HOME/.Terminal/dispatch.sh $envCPP $LIBPROJECT   "APPTERM"
 #        ;;
 
 
 #Sqlite"
         10)
-            /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Testsql"
+            $HOME/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Testsql"
         ;;
 #Zsqlite"
         14)
-            /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zsqlite"
+            $HOME/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zsqlite"
         ;;
 #Zoned"
         16)
-            /home/soleil/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zoned"
+            $HOME/.Terminal/dispatch.sh $envZIG $LIBPROJECT   "Zoned"
         ;;
 
 #debug
         33)
-            /home/soleil/.Terminal/debugZig.sh $PROJECT
+            $HOME/.Terminal/debugZig.sh $PROJECT
         ;;
 
 #print install enscript
         44)
-            /home/soleil/.Terminal/enScript.sh  $LIBPROJECT
+            $HOME/.Terminal/enScript.sh  $LIBPROJECT
         ;;
 
 #libtui
         50)
-            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBTUI
-            #sleep 2
-            #break
+            $HOME/.Terminal/myProject.sh  $PROJECT $LIBTUI
         ;;
 #libzone
         51)
-            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBZND
-            #sleep 2
-            #break
+            $HOME/.Terminal/myProject.sh  $PROJECT $LIBZND
         ;;
 
 #libsql
         52)
-            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBSQL
-            #sleep 2
-            #break
-        ;;
+            $HOME/.Terminal/myProject.sh  $PROJECT $LIBSQL
+         ;;
 #project
         60)
-            /home/soleil/.Terminal/myProject.sh  $PROJECT $LIBPROJECT"src-zig"
-            #sleep 2
-            #break
+            $HOME/.Terminal/myProject.sh  $PROJECT $LIBPROJECT"src-zig"
         ;;
 
 #?file
         66)
-            /home/soleil/.Terminal/lastFileZig.sh $PROJECT $LIBPROJECT"src-zig"
-            #sleep 2
-            #break
+            $HOME/.Terminal/lastFileZig.sh $PROJECT $LIBPROJECT"src-zig"
         ;;
 
 #?clear 
@@ -175,7 +165,7 @@ do
 #console
 
         88)
-            /home/soleil/.Terminal/console.sh 
+            $HOME/.Terminal/console.sh 
         ;;
 
 
