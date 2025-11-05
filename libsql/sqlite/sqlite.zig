@@ -245,7 +245,7 @@ pub fn isDbxist( vdir : []const u8, fn_file_name:[]const u8) bool {
     const errDir = error{File_FolderNotFound, };
     const cDIR = std.fs.cwd().openDir(vdir,.{}) catch {@panic(@errorName(errDir.File_FolderNotFound));};
     
-    cDIR.access(fn_file_name, .{.mode = .read_write}) catch |err|
+    cDIR.access(fn_file_name, .{.read = true , .write = true}) catch |err|
         switch (err) {
             error.FileNotFound => return false,
             error.PermissionDenied => return false,

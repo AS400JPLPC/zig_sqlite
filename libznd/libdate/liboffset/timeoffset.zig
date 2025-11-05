@@ -16,13 +16,24 @@ var tbl_offset =  std.ArrayList(i32).initCapacity(allocTZ,0) catch unreachable;
 const lib = "/tmp/Timezone";
 
 
+// time posix retrieve timstamp nanoseconds
+fn TSnano() i128 {
+    const ts = std.posix.clock_gettime(.REALTIME) catch |err| switch (err) {
+        error.UnsupportedClock, error.Unexpected => return 0, // "Precision of timing depends on hardware and OS".
+    };
+    return (@as(i128, ts.sec) * std.time.ns_per_s) + ts.nsec;
+}
+
+fn milliTimestamp() i64 {
+    return @as(i64, @intCast(@divFloor(TSnano(), std.time.ns_per_ms)));
+}
 
 //--------------------------------
 // International timezone recovery
 //--------------------------------
 pub fn writeTimezone() void {
 
-    const timesStamp_ms :i64 = @bitCast(std.time.milliTimestamp());
+    const timesStamp_ms :i64 = @bitCast(milliTimestamp());
 
     const user = std.posix.getenv("USER") orelse "INITTIMEZONE";
 

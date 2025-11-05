@@ -1,6 +1,6 @@
 # zig-sqlite
 
-zig 0.15.1  
+zig 0.16.0 dev 
   
 **The project is under construction**
 
@@ -185,6 +185,12 @@ The Date function is under study.<BR/>.
 
 → 2025-09-03 21:40  add fn pragma / jrnlog <BR/>
 
-→ 2025-09-03 21:40  Look in the “zig_prog” (github)  folder for real-world tests as examples.<BR/>
+→ 2025-09-03 21:40  Look in the “zig_prog” (github)  folder for real-world tests as examples.<BR/>  
+  
+
+→ 2025-09-03 21:40  update zig 0.16.0.DEV/ jrnlog <BR/>
+
+
+→ 2025-11-05 17:12  update zig 0.16.0.DEV  cDIR.access(fn_file_name, .{.read = true , .write = true})<BR/>
 
 <BR/>

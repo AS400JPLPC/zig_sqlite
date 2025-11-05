@@ -77,6 +77,13 @@ fn isFile() bool {
 // Days before 1 Jan 1970
 const EPOCH = daysBeforeYear(1970) + 1;
 
+// time posix retrieve timstamp nanoseconds
+fn TSnano() i128 {
+    const ts = std.posix.clock_gettime(.REALTIME) catch |err| switch (err) {
+        error.UnsupportedClock, error.Unexpected => return 0, // "Precision of timing depends on hardware and OS".
+    };
+    return (@as(i128, ts.sec) * std.time.ns_per_s) + ts.nsec;
+}            
 //------------------------------------
 // Datetime
 // -----------------------------------
@@ -155,7 +162,7 @@ pub const DTIME = struct {
     // Date initialization in UTC ONLY time-stamp format.
     // use is made of a chronolog
     pub fn nowUTC() DTIME {
-        const TS: u128 = @abs(std.time.nanoTimestamp());
+        const TS: u128 = @abs(TSnano());
         var th: u64 = @intCast(@mod(TS, std.time.ns_per_day));
 
         // th is now only the time part of the day
@@ -230,7 +237,8 @@ pub const DTIME = struct {
         const offset :i32 = ofs.readTimezone(mz.id);
         
         //timezone  Europe.Paris = 60 minutes in minutes
-        const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
+        // const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
+        const TS : u128 = @intCast(TSnano() + (offset * @as(i64,std.time.ns_per_min))) ;
 
         var th: u64 = @intCast(@mod(TS, std.time.ns_per_day));
           
@@ -418,7 +426,8 @@ pub const DATE = struct {
         if (!isFile()) ofs.writeTimezone();
         const offset :i128 = ofs.readTimezone(mz.id); 
         //There may be a date difference at a certain time, e.g. Paris and Los Angeles. 
-        const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
+        // const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
+        const TS : u128 = @intCast(TSnano() + (offset * @as(i64,std.time.ns_per_min))) ;
 
         var days_since_epoch: u64 = @intCast(@divFloor(TS , std.time.ns_per_day));
 
