@@ -77,13 +77,15 @@ fn isFile() bool {
 // Days before 1 Jan 1970
 const EPOCH = daysBeforeYear(1970) + 1;
 
-// time posix retrieve timstamp nanoseconds
+// retrieve timstamp nanoseconds tested Linux
 fn TSnano() i128 {
-    const ts = std.posix.clock_gettime(.REALTIME) catch |err| switch (err) {
-        error.UnsupportedClock, error.Unexpected => return 0, // "Precision of timing depends on hardware and OS".
+        var threaded: std.Io.Threaded = .init_single_threaded;
+        const io = threaded.io();
+        const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
+        error.UnsupportedClock, error.Unexpected => return 0, 
     };
-    return (@as(i128, ts.sec) * std.time.ns_per_s) + ts.nsec;
-}            
+    return @as(i128, ts.nanoseconds);
+}          
 //------------------------------------
 // Datetime
 // -----------------------------------
