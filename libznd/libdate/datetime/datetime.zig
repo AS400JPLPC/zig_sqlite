@@ -78,14 +78,14 @@ fn isFile() bool {
 const EPOCH = daysBeforeYear(1970) + 1;
 
 // retrieve timstamp nanoseconds tested Linux
-fn TSnano() i128 {
-        var threaded: std.Io.Threaded = .init_single_threaded;
-        const io = threaded.io();
-        const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
-        error.UnsupportedClock, error.Unexpected => return 0, 
-    };
-    return @as(i128, ts.nanoseconds);
-}          
+// fn TSnano() i128 {
+//         var threaded: std.Io.Threaded = .init_single_threaded;
+//         const io = threaded.io();
+//         const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
+//         error.UnsupportedClock, error.Unexpected => return 0, 
+//     };
+//     return @as(i128, ts.nanoseconds);
+// }          
 //------------------------------------
 // Datetime
 // -----------------------------------
@@ -164,7 +164,8 @@ pub const DTIME = struct {
     // Date initialization in UTC ONLY time-stamp format.
     // use is made of a chronolog
     pub fn nowUTC() DTIME {
-        const TS: u128 = @abs(TSnano());
+        // const TS: u128 = @abs(TSnano());
+        const TS: u128 = @abs(std.time.nanoTimestamp());
         var th: u64 = @intCast(@mod(TS, std.time.ns_per_day));
 
         // th is now only the time part of the day
@@ -239,9 +240,8 @@ pub const DTIME = struct {
         const offset :i32 = ofs.readTimezone(mz.id);
         
         //timezone  Europe.Paris = 60 minutes in minutes
-        // const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
-        const TS : u128 = @intCast(TSnano() + (offset * @as(i64,std.time.ns_per_min))) ;
-
+        const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
+        // const TS : u128 = @intCast(TSnano() + (offset * @as(i64,std.time.ns_per_min))) ;
         var th: u64 = @intCast(@mod(TS, std.time.ns_per_day));
           
         // th is now only the time part of the day
@@ -428,8 +428,8 @@ pub const DATE = struct {
         if (!isFile()) ofs.writeTimezone();
         const offset :i128 = ofs.readTimezone(mz.id); 
         //There may be a date difference at a certain time, e.g. Paris and Los Angeles. 
-        // const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
-        const TS : u128 = @intCast(TSnano() + (offset * @as(i64,std.time.ns_per_min))) ;
+        const TS : u128 = @intCast(std.time.nanoTimestamp() + (offset * @as(i64,std.time.ns_per_min))) ;
+        // const TS : u128 = @intCast(TSnano() + (offset * @as(i64,std.time.ns_per_min))) ;
 
         var days_since_epoch: u64 = @intCast(@divFloor(TS , std.time.ns_per_day));
 

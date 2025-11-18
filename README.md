@@ -193,4 +193,7 @@ The Date function is under study.<BR/>.
 
 → 2025-11-05 17:12  update zig 0.16.0.DEV  cDIR.access(fn_file_name, .{.read = true , .write = true})<BR/>
 
-<BR/>
+<BR/>    
+<br/>
+-2025-11-18  17:00 regression  Regression back to version 15.2<br/>
+<br/>

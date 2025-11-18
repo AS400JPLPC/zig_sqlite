@@ -17,17 +17,18 @@ const lib = "/tmp/Timezone";
 
 
 // retrieve timstamp nanoseconds tested Linux
-fn TSnano() i128 {
-        var threaded: std.Io.Threaded = .init_single_threaded;
-        const io = threaded.io();
-        const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
-        error.UnsupportedClock, error.Unexpected => return 0, 
-    };
-    return @as(i128, ts.nanoseconds);
-}
+// fn TSnano() i128 {
+//         var threaded: std.Io.Threaded = .init_single_threaded;
+//         const io = threaded.io();
+//         const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
+//         error.UnsupportedClock, error.Unexpected => return 0, 
+//     };
+//     return @as(i128, ts.nanoseconds);
+// }
 
 fn milliTimestamp() i64 {
-    return @as(i64, @intCast(@divFloor(TSnano(), std.time.ns_per_ms)));
+    // return @as(i64, @intCast(@divFloor(TSnano(), std.time.ns_per_ms)));
+    return @bitCast(std.time.milliTimestamp());
 }
 
 //--------------------------------

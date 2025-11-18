@@ -35,6 +35,21 @@ pub fn Perror(msg :  [] const u8) noreturn{
     }
  @panic(msg);
 }
+
+// retrieve timstamp nanoseconds tested Linux
+fn TSnano() i128 {
+        var threaded: std.Io.Threaded = .init_single_threaded;
+        const io = threaded.io();
+        const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
+        error.UnsupportedClock, error.Unexpected => return 0, 
+    };
+    return @as(i128, ts.nanoseconds);
+}
+
+fn milliTimestamp() i64 {
+    return @as(i64, @intCast(@divFloor(TSnano(), std.time.ns_per_ms)));
+}
+
 //=======================================================================
 
 
@@ -174,9 +189,10 @@ fn initLDA() void {
 // isFile
 //-------------------------------------------
 fn isFile(name: []const u8 ) bool {
-
-    const xDIR = std.fs.cwd().openDir(dirfile,.{}) catch unreachable;
-    xDIR.access(name, .{.mode = .read_write}) catch |e| switch (e) {
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io = threaded.io();
+    const xDIR = std.Io.Dir.cwd().openDir(io,dirfile,.{}) catch unreachable;
+    std.Io.Dir.access(xDIR,io, name, .{.read = true , .write = true}) catch |e| switch (e) {
         error.FileNotFound => return false,
         else => { Perror(std.fmt.allocPrint(allocZmmap,"{}",.{e}) catch unreachable); },
     };
@@ -406,7 +422,7 @@ pub fn released() void {
 pub fn masterMmap() !COMLDA {
 
     COM = undefined ;
-    const timesStamp_ms: u64 = @bitCast(std.time.milliTimestamp());
+    const timesStamp_ms: u64 =@intCast(milliTimestamp());
 
     parmTimes = std.fmt.allocPrint(allocZmmap,"{d}" ,.{timesStamp_ms})  catch unreachable;
 
