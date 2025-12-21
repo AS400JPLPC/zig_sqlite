@@ -19,7 +19,7 @@ const utl = @import("utils");
 const reg = @import("mvzr");  // regex match
 
 const os = std.os;
-const io = std.io;
+//const io = std.io;
 
 const Child = @import("std").ChildProcess;
 
@@ -3480,29 +3480,91 @@ pub const    pnl = struct {
 
         }
     }
+
+
     // restor -panel MATRIX to terminal
     pub fn rstPanel(comptime T: type , vsrc: *T , vdst : *PANEL) void {
         if (vdst.actif == false)    return ;
-        if (vsrc.posx + vsrc.lines > vdst.posx + vdst.lines    )    return ;
-        if (vsrc.posy + vsrc.cols    > vdst.posy + vdst.cols    )    return ;
+        if (vsrc.posx + vsrc.lines > vdst.posx + vdst.lines   )    return ;
+        if (vsrc.posy + vsrc.cols  > vdst.posy + vdst.cols    )    return ;
 
         var x :usize = 0;
         var y :usize = 0;
         var n :usize = 0;
-        var npos : usize =     vsrc.posx - vdst.posx   ;
+        var npos : usize = 0 ;
 
-    
-        while (x <= vsrc.lines) : (x += 1) {
-                n = (vdst.cols * npos) + vsrc.posy - vdst.posy ;
-                y = 0;
-                while (y <= vsrc.cols ) : (y += 1) {
-                    term.gotoXY(x + vsrc.posx  , y + vsrc.posy  );
+
+        
+        if ( (vsrc.posx + vsrc.lines < vdst.posx + vdst.lines) and (vsrc.posy + vsrc.cols  < vdst.posy + vdst.cols) )
+        {
+            x = 0;
+            npos = vsrc.posx - vdst.posx   ;
+            while (x <= vsrc.lines) : (x += 1) {
+                    n = (vdst.cols * npos) + vsrc.posy - vdst.posy ;
+                    y = 0;
+                    while (y <= vsrc.cols ) : (y += 1) {
+                        term.gotoXY(x + vsrc.posx  , y + vsrc.posy  );
+                        term.writeStyled(vdst.buf.items[n].ch,vdst.buf.items[n].attribut);
+                        n += 1;
+                    }
+                npos += 1;
+            }
+            return;
+        }
+
+        if ( (vsrc.posx + vsrc.lines == vdst.posx + vdst.lines) and (vsrc.posy + vsrc.cols  < vdst.posy + vdst.cols) )
+        {
+            x = 1 ;
+            npos = vdst.posx - vsrc.posx   ;
+            while (x <= vsrc.lines) : (x += 1) {
+                    n = (vdst.cols * npos) + vsrc.posy - vdst.posy  ;
+                    y = 1;
+                    while (y <= vsrc.cols ) : (y += 1) {
+                        term.gotoXY(x + vdst.posx - 1  , y + vdst.posy - 1 );
+                        term.writeStyled(vdst.buf.items[n].ch,vdst.buf.items[n].attribut);
+                        n += 1;
+                    }
+                npos += 1;
+            }
+            return ;
+        }
+
+
+        if ( (vsrc.posx + vsrc.lines < vdst.posx + vdst.lines) and (vsrc.posy + vsrc.cols  == vdst.posy + vdst.cols) )
+        {
+            x = 1 ;
+            npos = vdst.posx - vsrc.posx   ;
+            while (x <= vsrc.lines) : (x += 1) {
+                    n = (vdst.cols * npos)  ;
+                    y = 1;
+                    while (y <= vsrc.cols ) : (y += 1) {
+                        term.gotoXY(x + vdst.posx - 1  , y + vdst.posy - 1 );
+                        term.writeStyled(vdst.buf.items[n].ch,vdst.buf.items[n].attribut);
+                        n += 1;
+                    }
+                npos += 1;
+            }
+            return;
+        }
+
+        
+        if ( (vsrc.posx + vsrc.lines == vdst.posx + vdst.lines) and (vsrc.posy + vsrc.cols  == vdst.posy + vdst.cols) )
+        {
+            x = 1;
+            n = 0;
+            while (x <= vsrc.lines) : (x += 1) {
+                y = 1;
+                while (y <= vsrc.cols) : (y += 1) {
+                    term.gotoXY(x + vdst.posx - 1    , y + vdst.posy - 1 );
                     term.writeStyled(vdst.buf.items[n].ch,vdst.buf.items[n].attribut);
                     n += 1;
                 }
-            npos += 1;
+            }
         }
+        
     }
+
+    
 
     /// print PANEL
     pub fn printPanel    (vpnl: *PANEL) void {
