@@ -38,12 +38,7 @@ pub fn Perror(msg :  [] const u8) noreturn{
 
 // retrieve timstamp nanoseconds tested Linux
 fn TSnano() i128 {
-        var threaded: std.Io.Threaded = .init_single_threaded;
-        const io = threaded.io();
-        const ts = std.Io.Clock.real.now(io) catch |err| switch (err) {
-        error.UnsupportedClock, error.Unexpected => return 0, 
-    };
-    return @as(i128, ts.nanoseconds);
+    return std.time.nanoTimestamp();
 }
 
 fn milliTimestamp() i64 {
@@ -88,10 +83,7 @@ const allocZmmap = std.heap.page_allocator;
 pub const Aes256Gcm = cry.AesGcm(std.crypto.core.aes.Aes256);
 
 // key and nonce crypto
-// var key:   [Aes256Gcm.key_length]u8   = undefined; // len 32
-// var nonce: [Aes256Gcm.nonce_length]u8 = undefined; // len 12 
-// var tag:   [Aes256Gcm.tag_length]u8   = undefined; // len 16
-var dta:   []const u8 = undefined; // data crypter 
+// var dta:   []const u8 = undefined; // data crypter 
 var cipher: []u8 = undefined;
 var decipher: []u8 = undefined;
 
@@ -125,9 +117,10 @@ const ZMMAP = struct {
     ZUDS   :fs.File ,
     ZLCI   :fs.File ,
     ZPWR   :fs.File ,
-    
+
+    // key and nonce crypto
     key:   [Aes256Gcm.key_length]u8        , // len 32
-    nonce: [Aes256Gcm.nonce_length]u8    , // len 12 
+    nonce: [Aes256Gcm.nonce_length]u8      , // len 12 
     tag:   [Aes256Gcm.tag_length]u8        , // len 16
 };
 
@@ -189,13 +182,12 @@ fn initLDA() void {
 // isFile
 //-------------------------------------------
 fn isFile(name: []const u8 ) bool {
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io = threaded.io();
-    const xDIR = std.Io.Dir.cwd().openDir(io,dirfile,.{}) catch unreachable;
-    std.Io.Dir.access(xDIR,io, name, .{.read = true , .write = true}) catch |e| switch (e) {
+    const xDIR = std.fs.cwd().openDir(dirfile,.{}) catch unreachable;
+       xDIR.access(name, .{}) catch |e| switch (e) {
         error.FileNotFound => return false,
-        else => { Perror(std.fmt.allocPrint(allocZmmap,"{}",.{e}) catch unreachable); },
+                else => { Perror(std.fmt.allocPrint(allocZmmap,"{}",.{e}) catch unreachable); },
     };
+  
     return true;
 }
 
@@ -410,6 +402,33 @@ pub fn released() void {
         if ( isFile(COM.filePWR) ) cDIR.deleteFile(COM.filePWR) catch unreachable;
 
     initLDA();
+
+}
+//-------------------------------------------
+//fermeture all base
+//-------------------------------------------
+// released acces initMmap for new communication
+pub fn closeAll() void { 
+
+
+
+        if ( isFile(COM.fileKEY) ) COM.ZKEY.close();
+        if ( isFile(COM.fileKEY) ) cDIR.deleteFile(COM.fileKEY) catch unreachable;
+        
+        if ( isFile(COM.fileKEY) ) COM.ZNONCE.close();       
+        if ( isFile(COM.fileNONCE) ) cDIR.deleteFile(COM.fileNONCE) catch unreachable;
+        
+        if ( isFile(COM.fileTAG) ) COM.ZTAG.close();
+        if ( isFile(COM.fileTAG) ) cDIR.deleteFile(COM.fileTAG) catch unreachable;
+
+        if ( isFile(COM.fileLCI) ) COM.ZLCI.close();
+        if ( isFile(COM.fileLCI) ) cDIR.deleteFile(COM.fileLCI) catch unreachable;
+
+        if ( isFile(COM.fileUDS) ) COM.ZUDS.close();
+        if ( isFile(COM.fileUDS) ) cDIR.deleteFile(COM.fileUDS) catch unreachable;
+
+        if ( isFile(COM.filePWR) ) COM.ZPWR.close();
+        if ( isFile(COM.filePWR) ) cDIR.deleteFile(COM.filePWR) catch unreachable;
 
 }
 
