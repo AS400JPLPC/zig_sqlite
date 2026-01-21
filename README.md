@@ -1,7 +1,7 @@
 # zig-sqlite
 
-zig 0.16.0 dev 
-  
+zig 0.15.2
+
 **The project is under construction**
 
 I thank "[nDimensional](https://github.com/nDimensional/zig-sqlite)"
@@ -177,7 +177,7 @@ The Date function is under study.<BR/>.
 → 2025-03-14 16:25   Test with SQL of “DEF” structure with DECIMAL DATE, this forced me to harmonize and simplify, “date” with “string” and “decimal”.<BR/>
 <BR/>
 → 2025-08-22 02:10  update zig 0.15.1  <BR/>
-→ 2025-08-22 02:10  add openTmp -> ":memory:"   <BR/>  
+→ 2025-08-22 02:10  add openTmp -> ":memory:"   <BR/>
 → 2025-08-22 02:10  add open -> add mode : Mode.ReadWrite / Mode.readOnly <BR/>
 
 → 2025-08-29 00:30  add fn zbool <BR/>
@@ -185,15 +185,23 @@ The Date function is under study.<BR/>.
 
 → 2025-09-03 21:40  add fn pragma / jrnlog <BR/>
 
-→ 2025-09-03 21:40  Look in the “zig_prog” (github)  folder for real-world tests as examples.<BR/>  
-  
+→ 2025-09-03 21:40  Look in the “zig_prog” (github)  folder for real-world tests as examples.<BR/>
+
 
 → 2025-09-03 21:40  update zig 0.16.0.DEV/ jrnlog <BR/>
 
 
 → 2025-11-05 17:12  update zig 0.16.0.DEV  cDIR.access(fn_file_name, .{.read = true , .write = true})<BR/>
 
-<BR/>    
+<BR/>
+→ 2025-12-21 02:15 : update function rstPanel.  <BR/>
+<BR/>
+<BR/>
+→ 2025-12-21 02:15 : update decimal  function editcode.  <BR/>
+<BR/>
+
+
+<BR/>
 <br/>
 -2025-11-18  17:00 regression  Regression back to version 15.2<br/>
 <br/>

@@ -59,22 +59,24 @@ pub const REFTYP = enum {
     TEXT_FREE,            // Free
     TEXT_FULL,            // Letter Digit Char-special
     ALPHA,                // Letter
-    ALPHA_UPPER,        // Letter
+    ALPHA_UPPER,          // Letter
+    ALPHA_LOWER,          // Letter
     ALPHA_NUMERIC,        // Letter Digit espace -
-    ALPHA_NUMERIC_UPPER,// Letter Digit espace -
-    PASSWORD,            // Letter Digit and normaliz char-special
-    YES_NO,                // 'y' or 'Y' / 'o' or 'O'
-    UDIGIT,                // Digit unsigned
+    ALPHA_NUMERIC_UPPER,  // Letter Digit espace -
+    ALPHA_NUMERIC_LOWER,  // Letter Digit espace -
+    PASSWORD,             // Letter Digit and normaliz char-special
+    YES_NO,               // 'y' or 'Y' / 'o' or 'O'
+    UDIGIT,               // Digit unsigned
     DIGIT,                // Digit signed 
-    UDECIMAL,            // Decimal unsigned
-    DECIMAL,            // Decimal signed
-    DATE_ISO,            // YYYY/MM/DD
-    DATE_FR,            // DD/MM/YYYY
-    DATE_US,            // MM/DD/YYYY
+    UDECIMAL,             // Decimal unsigned
+    DECIMAL,              // Decimal signed
+    DATE_ISO,             // YYYY/MM/DD
+    DATE_FR,              // DD/MM/YYYY
+    DATE_US,              // MM/DD/YYYY
     TELEPHONE,            // (+123) 6 00 01 00 02 
-    MAIL_ISO,            // normalize regex
-    SWITCH,                // CTRUE CFALSE
-    FUNC,                // call Function
+    MAIL_ISO,             // normalize regex
+    SWITCH,               // CTRUE CFALSE
+    FUNC,                 // call Function
 };
 
 
@@ -1427,6 +1429,22 @@ pub const    fld = struct {
 
     // New Field String ---> arraylist panel-lfield
     // refence type
+    // .ALPHA_LOWER
+    pub fn newFieldAlphaLower(vname: [] const u8,
+                                        vposx: usize, vposy: usize,
+                                        vwidth:    usize,
+                                        vtext: []const u8,
+                                        vrequier: bool,
+                                        verrmsg: []const u8,
+                                        vhelp: []const u8,
+                                        vregex: []const u8) FIELD {
+
+        return initFieldString(vname,    vposx, vposy,
+                                                    REFTYP.ALPHA_LOWER,
+                                                    vwidth, vtext, vrequier, verrmsg, vhelp, vregex);
+    }
+    // New Field String ---> arraylist panel-lfield
+    // refence type
     // .ALPHA_NUMERIC
     pub fn newFieldAlphaNumeric(vname: [] const u8,
                                         vposx: usize, vposy: usize,
@@ -1459,6 +1477,22 @@ pub const    fld = struct {
                                                     vwidth, vtext, vrequier, verrmsg, vhelp, vregex);
     }
 
+    // New Field String ---> arraylist panel-lfield
+    // refence type
+    // .ALPHA_NUMERIC_LOWER
+    pub fn newFieldAlphaNumericLower(vname: [] const u8,
+                                        vposx: usize, vposy: usize,
+                                        vwidth:    usize,
+                                        vtext: []const u8,
+                                        vrequier: bool,
+                                        verrmsg: []const u8,
+                                        vhelp: []const u8,
+                                        vregex: []const u8) FIELD {
+
+        return initFieldString(vname,    vposx, vposy,
+                                                    REFTYP.ALPHA_NUMERIC_LOWER,
+                                                    vwidth, vtext, vrequier, verrmsg, vhelp, vregex);
+    }
     // New Field String ---> arraylist panel-lfield
     // refence type
     // .PASSWORD
@@ -2167,10 +2201,6 @@ pub const    fld = struct {
         if ( n < vpnl.field.items.len) return vpnl.field.items[n].zwitch;
         return ErrForms.fld_getSwitch_Index_invalide ;
     }
-    pub fn getErr(vpnl: *pnl.PANEL , n: usize)    ErrForms ! bool {
-        if ( n < vpnl.field.items.len) return vpnl.field.items[n].err;
-        return ErrForms.fld_getErr_Index_invalide ;
-    }
     pub fn getFunc(vpnl: *pnl.PANEL , n: usize)    ErrForms ! [] const u8 {
         if ( n < vpnl.field.items.len) return vpnl.field.items[n].procfunc;
         return ErrForms.fld_getFunc_Index_invalide ;
@@ -2224,7 +2254,7 @@ pub const    fld = struct {
     }
 
     pub fn setRequier(vpnl: *pnl.PANEL , n: usize, val :bool)    ErrForms ! void {
-        if ( n < vpnl.field.items.len)    vpnl.field.items[n].protect = val
+        if ( n < vpnl.field.items.len)    vpnl.field.items[n].reqier = val
         else return ErrForms.fld_setRequier_Index_invalide;
     }
 
@@ -2233,7 +2263,7 @@ pub const    fld = struct {
         else return ErrForms.fld_setEdtcar_Index_invalide;
     }
     pub fn setRegex(vpnl: *pnl.PANEL , n: usize, val:[] const u8)    ErrForms ! void {
-        if ( n < vpnl.field.items.len) vpnl.field.items[n].reftyp = val
+        if ( n < vpnl.field.items.len) vpnl.field.items[n].regex = val
         else return ErrForms.fld_setRegex_Index_invalide;
     }
     pub fn setFunc(vpnl: *pnl.PANEL , n: usize, val :[]const u8)    ErrForms ! void {
@@ -2384,6 +2414,7 @@ pub const    fld = struct {
     }
 
 
+    
     //----------------------------------------------------
     // Input buffer management modeled on 5250/3270
     // inspiration ncurse
@@ -2926,12 +2957,13 @@ pub const    fld = struct {
 
                                     }
                                 },
-                                .ALPHA, .ALPHA_UPPER => {
+                                .ALPHA, .ALPHA_UPPER, .ALPHA_LOWER => {
                                     if ( (e_count < e_nbrcar and isSpace(Fkey.Char) == false ) and
                                     (utl.isLetterStr(Fkey.Char) ) or
                                     (isSpace(Fkey.Char) == true and e_count > 0 and e_count < e_nbrcar) ) {
                                         
                                         if (vfld.reftyp == .ALPHA_UPPER) Fkey.Char = utl.upperStr(Fkey.Char);
+                                        if (vfld.reftyp == .ALPHA_LOWER) Fkey.Char = utl.lowerStr(Fkey.Char);
 
                                         if (statusCursInsert and e_count < e_nbrcar - 1) insert(Fkey.Char,e_count)
                                         else    e_FIELD.items[e_count] = Fkey.Char;
@@ -2944,13 +2976,14 @@ pub const    fld = struct {
                                         }
                                     }
                                 },
-                                .ALPHA_NUMERIC, .ALPHA_NUMERIC_UPPER => {
+                                .ALPHA_NUMERIC, .ALPHA_NUMERIC_UPPER, .ALPHA_NUMERIC_LOWER=> {
                                     if ( (e_count < e_nbrcar and isSpace(Fkey.Char) == false ) and
                                     (utl.isLetterStr(Fkey.Char) or utl.isDigitStr(Fkey.Char) or
                                     (isSpace(Fkey.Char) == true and e_count > 0 and e_count < e_nbrcar) )) {
 
                                         if (vfld.reftyp == .ALPHA_NUMERIC_UPPER) Fkey.Char = utl.upperStr(Fkey.Char);
-
+                                        if (vfld.reftyp == .ALPHA_NUMERIC_LOWER) Fkey.Char = utl.lowerStr(Fkey.Char);
+                                        
                                         if (statusCursInsert and e_count < e_nbrcar - 1) insert(Fkey.Char,e_count)
                                         else    e_FIELD.items[e_count] = Fkey.Char;
 
@@ -3232,6 +3265,8 @@ pub const    pnl = struct {
 
         idxfld: usize,
 
+        grid:    bool,
+
         key      : kbd ,    // Func task call
 
         keyField : kbd ,    // enter up down
@@ -3276,7 +3311,8 @@ pub const    pnl = struct {
                     .linev    = std.ArrayList(lnv.LINEV).initCapacity(mem.allocTui,0) catch unreachable,
                     .lineh    = std.ArrayList(lnh.LINEH).initCapacity(mem.allocTui,0) catch unreachable,
                     .buf      = std.ArrayList(TERMINAL_CHAR).initCapacity(mem.allocTui,0) catch unreachable,
-
+                    
+                    .grid   = false,
                     .idxfld = 9999,
                     .key    =    kbd.none,
                     .keyField = kbd.none,
@@ -3332,6 +3368,7 @@ pub const    pnl = struct {
         device.linev    = std.ArrayList(lnv.LINEV).initCapacity(mem.allocTui,0) catch unreachable;
         device.lineh    = std.ArrayList(lnh.LINEH).initCapacity(mem.allocTui,0) catch unreachable;
         device.buf      = std.ArrayList(TERMINAL_CHAR).initCapacity(mem.allocTui,0) catch unreachable;
+        device.grid     = false;
         device.idxfld   = 9999;
         device.key      = kbd.none;
         device.keyField = kbd.none;
@@ -3395,6 +3432,9 @@ pub const    pnl = struct {
         vpnl.lineh.deinit(mem.allocTui);
         vpnl.linev.deinit(mem.allocTui);
         vpnl.buf.deinit(mem.allocTui);
+        vpnl.grid = false;
+        vpnl.idxfld =9999;
+        vpnl.keyField =kbd.none;        
     }
 
 
@@ -3422,14 +3462,19 @@ pub const    pnl = struct {
     pub fn getActif(vpnl: *PANEL) bool {
         return vpnl.actif;
     }
+    pub fn getGrid(vpnl: *PANEL) bool {
+        return vpnl.grid;
+    }
 
     pub fn setIdxfld(vpnl: *PANEL , n :usize) void {
         vpnl.idxfld = n ;
     }
     pub fn setActif(vpnl: *PANEL , b :bool) void {
-        vpnl.items.actif = b ;
+        vpnl.actif = b ;
     }
-
+    pub fn setGrid(vpnl: *PANEL , b :bool) void {
+        vpnl.grid = b ;
+    }
 
     pub fn displayPanel(vpnl: *PANEL)    void {
         // display matrice PANEL
@@ -3472,6 +3517,8 @@ pub const    pnl = struct {
 
         vpnl.idxfld =9999;
 
+        vpnl.grid = false;
+        
         vpnl.keyField =kbd.none;
 
         for (vpnl.field.items, 0..) |_, idx| {
@@ -3575,6 +3622,9 @@ pub const    pnl = struct {
         // cursor HIDE par défault
         term.cursHide();
 
+        // grid off
+        vpnl.grid = false;
+
         // clear matrix
         clsPanel(vpnl);
 
@@ -3610,6 +3660,19 @@ pub const    pnl = struct {
 
         displayPanel(vpnl);
     }
+
+
+
+    pub fn refreshField(vpnl: *pnl.PANEL)    void {
+        // FIELD
+        for (vpnl.field.items) |fldprt| {
+            if (fldprt.actif) {
+                fld.printField(vpnl, fldprt);
+                fld.displayField(vpnl, fldprt);
+            }
+        }
+    }
+
 
     pub fn msgErr(vpnl: *PANEL, info: [] const u8) void {
 
@@ -3747,9 +3810,11 @@ pub const    pnl = struct {
             }
         }
             
-        // first time
+        // first time or Init 
+        // If grid = on, printPanel before querying the panel.
+        //This allows you to integrate the display of a grid into the panel
         if ( vpnl.idxfld == 9999) {
-                printPanel(vpnl); 
+                if ( !vpnl.grid) printPanel(vpnl); 
                 nField = 0;
                 // positioning on the first active Field zone
                 if (nbrField > 0 ) {
